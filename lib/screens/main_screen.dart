@@ -25,17 +25,8 @@ class _MainScreenState extends State<MainScreen> {
       body: IndexedStack(index: _selectedIndex, children: _screens),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Open Add Expense Sheet
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => DraggableScrollableSheet(
-              initialChildSize: 0.8,
-              minChildSize: 0.5,
-              maxChildSize: 0.95,
-              builder: (_, controller) => const AddExpenseSheet(),
-            ),
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AddExpenseScreen()),
           );
         },
         backgroundColor: theme.primaryColor,

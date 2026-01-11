@@ -2,70 +2,152 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Colors extracted/approximated from the "clean" reference image
-  // The image shows a very light, clean interface with distinct primary colors.
-  // Assuming a purple/indigo accent based on "Sumit" avatar and clean lines.
+  // ---------------------------------------------------------------------------
+  // 1. Static Color Palette
+  // ---------------------------------------------------------------------------
 
-  static const Color primaryColor = Color(0xFF6C63FF); // Example clean purple
-  static const Color accentColor = Color(
-    0xFF00C853,
-  ); // Green for positive/income
-  static const Color errorColor = Color(0xFFE53935); // Red for expense
+  // Primary Brand Colors
 
-  static const Color background = Color(
-    0xFFF9FAFC,
-  ); // Very light grey/white background
-  static const Color surface = Colors.white;
+  // Used for headings, active tabs
+  static const Color primaryNavy = Color(0xFF2D3250);
 
-  static const Color textDark = Color(0xFF1A1A1A);
-  static const Color textGrey = Color(0xFF9E9E9E);
-  static const Color textLight = Color(0xFFFAFAFA);
+  // The specific "Finance Success" green
+  static const Color primaryGreen = Color(0xFF2ECC71);
+
+  // Used for "Food & Drinks" tag/buttons
+  static const Color accentBlue = Color(0xFF4A90E2);
+
+  // Backgrounds
+
+  // Very light grey/blue tint
+  static const Color scaffoldBackground = Color(0xFFF8F9FB);
+  static const Color cardBackground = Color(0xFFFFFFFF);
+
+  // Search bar background
+  static const Color inputFill = Color(0xFFF0F2F5);
+
+  // Text Colors
+  static const Color textPrimary = Color(0xFF1A1C29); // Almost black
+  static const Color textSecondary = Color(0xFF9095A1); // Grey text
+  static const Color textWhite = Color(0xFFFFFFFF);
+
+  // Functional Colors
+  static const Color dangerRed = Color(0xFFEB5757); // For "Abort" or errors
+  static const Color dividerColor = Color(0xFFEDEEF2);
+
+  // Other Colors
+  static const Color tagBackground = Color(0xFFEAEBF0); // Cool light grey
+  static const Color tagText = Color(0xFF7D8294); // Muted slate grey
+
+  // Gradients (for that Graph)
+  static const LinearGradient greenGraphGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF2ECC71), // Green
+      Color(0x002ECC71), // Transparent Green
+    ],
+  );
+
+  // ---------------------------------------------------------------------------
+  // 2. Theme Data Generator
+  // ---------------------------------------------------------------------------
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: background,
-      primaryColor: primaryColor,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        primary: primaryColor,
-        secondary: accentColor,
-        surface: surface,
-        background: background,
-        error: errorColor,
+
+      // Base Colors
+      scaffoldBackgroundColor: scaffoldBackground,
+      primaryColor: primaryNavy,
+
+      // Color Scheme (Material 3 definition)
+      colorScheme: const ColorScheme.light(
+        primary: primaryNavy,
+        secondary: primaryGreen,
+        surface: cardBackground,
+        error: dangerRed,
+        onPrimary: textWhite,
+        onSurface: textPrimary,
       ),
-      textTheme: GoogleFonts.outfitTextTheme().apply(
-        bodyColor: textDark,
-        displayColor: textDark,
+
+      // Typography (Using Inter to match the clean look)
+      textTheme: GoogleFonts.interTextTheme().apply(
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
       ),
+
+      // AppBar Theme
       appBarTheme: const AppBarTheme(
-        backgroundColor: background,
+        backgroundColor: scaffoldBackground,
+        // Blends with body
         elevation: 0,
         centerTitle: false,
-        iconTheme: IconThemeData(color: textDark),
+        iconTheme: IconThemeData(color: textPrimary),
         titleTextStyle: TextStyle(
-          color: textDark,
+          color: textPrimary,
           fontSize: 20,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Inter',
         ),
       ),
+
+      // Card Theme (for the white blocks)
       cardTheme: CardThemeData(
-        color: surface,
+        color: cardBackground,
         elevation: 0,
+        margin: const EdgeInsets.symmetric(vertical: 8),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFEEEEEE)),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.transparent), // Clean look
         ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: surface,
-        selectedItemColor: primaryColor,
-        unselectedItemColor: textGrey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        elevation: 10,
-        type: BottomNavigationBarType.fixed,
+
+      // Input Decoration (Search bars, etc.)
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: inputFill,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        hintStyle: const TextStyle(color: textSecondary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryNavy, width: 1),
+        ),
       ),
+
+      // Button Themes
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryNavy,
+          foregroundColor: textWhite,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+      ),
+
+      // Floating Action Button
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: primaryNavy,
+        foregroundColor: textWhite,
+      ),
+
+      // Icon Theme
+      iconTheme: const IconThemeData(color: textPrimary, size: 24),
     );
   }
 }

@@ -5,14 +5,14 @@ import 'package:provider/provider.dart';
 import '../../data/data/expense/expense.dart';
 import '../../data/expense_provider.dart';
 
-class AddExpenseSheet extends StatefulWidget {
-  const AddExpenseSheet({super.key});
+class AddExpenseScreen extends StatefulWidget {
+  const AddExpenseScreen({super.key});
 
   @override
-  State<AddExpenseSheet> createState() => _AddExpenseSheetState();
+  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
 }
 
-class _AddExpenseSheetState extends State<AddExpenseSheet> {
+class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -116,142 +116,144 @@ class _AddExpenseSheetState extends State<AddExpenseSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-      ),
-      child: Column(
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
 
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Add Expense",
-                  style: GoogleFonts.outfit(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-
-          const Divider(),
-
-          // Chat Area
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(20),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isUser = msg['isUser'] as bool;
-                final text = msg['text'] as String;
-                return Align(
-                  alignment: isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isUser
-                          ? const Color(0xFF6C63FF)
-                          : const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16),
-                        topRight: const Radius.circular(16),
-                        bottomLeft: isUser
-                            ? const Radius.circular(16)
-                            : const Radius.circular(4),
-                        bottomRight: isUser
-                            ? const Radius.circular(4)
-                            : const Radius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      text,
-                      style: GoogleFonts.outfit(
-                        color: isUser ? Colors.white : Colors.black87,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // Input Area
-          SafeArea(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                top: 8,
-              ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        decoration: InputDecoration(
-                          hintText: "Type #Category Amount...",
-                          border: InputBorder.none,
-                          hintStyle: GoogleFonts.outfit(color: Colors.grey),
-                        ),
-                        onSubmitted: _processInput,
-                      ),
+                  Text(
+                    "Add Expense",
+                    style: GoogleFonts.outfit(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  FloatingActionButton(
-                    mini: true,
-                    backgroundColor: const Color(0xFF6C63FF),
-                    child: const Icon(
-                      Icons.send,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                    onPressed: () => _processInput(_controller.text),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+
+            const Divider(),
+
+            // Chat Area
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(20),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  final isUser = msg['isUser'] as bool;
+                  final text = msg['text'] as String;
+                  return Align(
+                    alignment: isUser
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isUser
+                            ? const Color(0xFF6C63FF)
+                            : const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(16),
+                          topRight: const Radius.circular(16),
+                          bottomLeft: isUser
+                              ? const Radius.circular(16)
+                              : const Radius.circular(4),
+                          bottomRight: isUser
+                              ? const Radius.circular(4)
+                              : const Radius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        text,
+                        style: GoogleFonts.outfit(
+                          color: isUser ? Colors.white : Colors.black87,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Input Area
+            SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                  top: 8,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: TextField(
+                          controller: _controller,
+                          decoration: InputDecoration(
+                            hintText: "Type #Category Amount...",
+                            border: InputBorder.none,
+                            hintStyle: GoogleFonts.outfit(color: Colors.grey),
+                          ),
+                          onSubmitted: _processInput,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    FloatingActionButton(
+                      mini: true,
+                      backgroundColor: const Color(0xFF6C63FF),
+                      child: const Icon(
+                        Icons.send,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      onPressed: () => _processInput(_controller.text),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
