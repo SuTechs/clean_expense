@@ -15,13 +15,27 @@ class ExpenseBloc extends AbstractBloc {
   /// add expense
   void addExpense(ExpenseData expense) {
     _expenses.add(expense);
+
+    _expenses = copyList(_expenses);
     notifyListeners();
   }
 
   /// delete expense
-  void deleteExpense(ExpenseData expense) {
-    _expenses.removeWhere((e) => e.id == expense.id);
+  void deleteExpense(String id) {
+    _expenses.removeWhere((e) => e.id == id);
+
+    _expenses = copyList(_expenses);
     notifyListeners();
+  }
+
+  void updateExpense(ExpenseData expense) {
+    final index = _expenses.indexWhere((e) => e.id == expense.id);
+    if (index != -1) {
+      _expenses[index] = expense;
+
+      _expenses = copyList(_expenses);
+      notifyListeners();
+    }
   }
 
   /// ------------------ Stats ------------------

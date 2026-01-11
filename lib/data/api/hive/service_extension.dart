@@ -32,8 +32,8 @@ extension ExpenseDataExtension on HiveService {
   }
 
   /// Delete expense
-  Future<void> deleteExpense(ExpenseData expense) async {
-    await expenseBox.delete(expense.id);
+  Future<void> deleteExpense(String id) async {
+    await expenseBox.delete(id);
   }
 
   /// Update expense
@@ -42,7 +42,7 @@ extension ExpenseDataExtension on HiveService {
   }
 
   /// Read expenses
-  List<ExpenseData> readExpenses() {
+  List<ExpenseData> getAllExpenses() {
     return expenseBox.values.toList();
   }
 }
