@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'chat/add_expense_sheet.dart';
+import 'chat/chat_screen.dart';
 import 'home/home_screen.dart';
 import 'stats/stats_screen.dart';
 
@@ -25,18 +25,9 @@ class _MainScreenState extends State<MainScreen> {
       body: IndexedStack(index: _selectedIndex, children: _screens),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Open Add Expense Sheet
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => DraggableScrollableSheet(
-              initialChildSize: 0.8,
-              minChildSize: 0.5,
-              maxChildSize: 0.95,
-              builder: (_, controller) => const AddExpenseSheet(),
-            ),
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (context) => const ChatScreen()));
         },
         backgroundColor: theme.primaryColor,
         shape: const CircleBorder(),
