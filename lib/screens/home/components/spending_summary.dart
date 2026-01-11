@@ -15,9 +15,11 @@ class SpendingSummary extends StatelessWidget {
     final breakdown = bloc.monthlyCategoryBreakdown;
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
 
-    // Find the max amount for percentage calculation
+    // Calculate total amount for share-of-total percentage
+    double totalAmount = 0;
     double maxAmount = 0;
     breakdown.forEach((category, amount) {
+      totalAmount += amount;
       if (amount > maxAmount) maxAmount = amount;
     });
 
@@ -25,7 +27,8 @@ class SpendingSummary extends StatelessWidget {
       return {
         'label': e.key,
         'amount': e.value,
-        'percent': maxAmount > 0 ? e.value / maxAmount : 0.0,
+        'percent': totalAmount > 0 ? e.value / totalAmount : 0.0,
+        'visualRatio': maxAmount > 0 ? e.value / maxAmount : 0.0,
       };
     }).toList();
 
@@ -113,6 +116,7 @@ class SpendingSummary extends StatelessWidget {
                     item['label'] as String,
                     item['amount'] as double,
                     item['percent'] as double,
+                    item['visualRatio'] as double,
                     currencyFormat,
                     showPercentage,
                   ),
@@ -171,6 +175,7 @@ class SpendingSummary extends StatelessWidget {
     String label,
     double amount,
     double percent,
+    double visualRatio,
     NumberFormat currencyFormat,
     bool showPercentage,
   ) {
@@ -179,8 +184,8 @@ class SpendingSummary extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final maxWidth = constraints.maxWidth - 100; // Leave room for amount
-          // Calculate the width of the background bar based on percentage
-          final barWidth = maxWidth * percent;
+          // Calculate the width of the background bar based on visualRatio
+          final barWidth = maxWidth * visualRatio;
 
           return Row(
             children: [
