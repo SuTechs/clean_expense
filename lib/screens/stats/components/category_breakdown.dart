@@ -47,7 +47,7 @@ class _CategoryBreakdownState extends State<CategoryBreakdown> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 "Category Distribution",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -125,7 +125,9 @@ class _CategoryBreakdownState extends State<CategoryBreakdown> {
                   color: isSelected ? AppTheme.inputFill : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                   border: isSelected
-                      ? Border.all(color: AppTheme.primaryNavy.withOpacity(0.1))
+                      ? Border.all(
+                          color: AppTheme.primaryNavy.withValues(alpha: 0.1),
+                        )
                       : null,
                 ),
                 child: _buildCategoryRow(
@@ -170,7 +172,7 @@ class _CategoryBreakdownState extends State<CategoryBreakdown> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(0.4),
+                      color: color.withValues(alpha: 0.4),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -198,7 +200,7 @@ class _CategoryBreakdownState extends State<CategoryBreakdown> {
                       height: 8,
                       width: barWidth < 10 ? 10 : barWidth,
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.2),
+                        color: color.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       alignment: Alignment.centerLeft,
@@ -267,9 +269,9 @@ class _CategoryBreakdownState extends State<CategoryBreakdown> {
         titleStyle: GoogleFonts.outfit(
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           shadows: [
-            Shadow(color: Colors.black.withOpacity(0.2), blurRadius: 2),
+            Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 2),
           ],
         ),
       );

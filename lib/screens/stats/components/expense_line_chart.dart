@@ -45,22 +45,16 @@ class ExpenseLineChart extends StatelessWidget {
             },
           ),
         ),
-        gridData: FlGridData(show: false),
-        titlesData: FlTitlesData(
+        gridData: const FlGridData(show: false),
+        titlesData: const FlTitlesData(
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: false,
             ), // Keep it clean for multiple periods
           ),
-          leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         minX: 0,
@@ -74,7 +68,7 @@ class ExpenseLineChart extends StatelessWidget {
               return FlSpot(e.key.toDouble(), e.value);
             }).toList(),
             isCurved: true,
-            color: AppTheme.textSecondary.withOpacity(0.3),
+            color: AppTheme.textSecondary.withValues(alpha: 0.3),
             barWidth: 2,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
@@ -92,7 +86,7 @@ class ExpenseLineChart extends StatelessWidget {
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.redAccent.withOpacity(0.1),
+              color: Colors.redAccent.withValues(alpha: 0.1),
             ),
           ),
         ],

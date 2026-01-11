@@ -97,8 +97,9 @@ class StatisticsHelper {
     if (_filteredExpenses.isEmpty) return 0;
     if (_filteredExpenses
         .where((e) => e.type == TransactionType.outgoing)
-        .isEmpty)
+        .isEmpty) {
       return 0;
+    }
 
     // Naively count days with at least one transaction?
     // Or just divide total by days in period?

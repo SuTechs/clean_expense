@@ -173,7 +173,9 @@ class _SmartInputFieldState extends State<SmartInputField>
                       ),
                       child: ActionChip(
                         label: Text("#$c"),
-                        backgroundColor: AppTheme.primaryNavy.withOpacity(0.1),
+                        backgroundColor: AppTheme.primaryNavy.withValues(
+                          alpha: 0.1,
+                        ),
                         labelStyle: const TextStyle(
                           color: AppTheme.primaryNavy,
                           fontWeight: FontWeight.bold,
@@ -244,7 +246,7 @@ class _SmartInputFieldState extends State<SmartInputField>
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
                 ),
@@ -294,13 +296,10 @@ class _SmartInputFieldState extends State<SmartInputField>
                 if (_controller.text.trim().isNotEmpty)
                   GestureDetector(
                     onTap: _handleSend,
-                    child: CircleAvatar(
+                    child: const CircleAvatar(
                       backgroundColor: AppTheme.primaryGreen,
                       radius: 22,
-                      child: const Icon(
-                        Icons.arrow_upward,
-                        color: Colors.white,
-                      ),
+                      child: Icon(Icons.arrow_upward, color: Colors.white),
                     ),
                   ),
               ],

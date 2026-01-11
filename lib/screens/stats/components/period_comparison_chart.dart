@@ -129,7 +129,7 @@ class PeriodComparisonChart extends StatelessWidget {
         // Previous Period Bar (Lighter/Greyed)
         BarChartRodData(
           toY: previous,
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 12,
           borderRadius: BorderRadius.circular(4),
         ),

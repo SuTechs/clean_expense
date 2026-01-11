@@ -162,7 +162,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                     const SizedBox(width: 12),
                     _buildLegendDot(
-                      AppTheme.textSecondary.withOpacity(0.3),
+                      AppTheme.textSecondary.withValues(alpha: 0.3),
                       "Previous",
                     ),
                   ],
@@ -315,7 +315,7 @@ class _StatsScreenState extends State<StatsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -326,7 +326,7 @@ class _StatsScreenState extends State<StatsScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -385,9 +385,13 @@ class _StatsScreenState extends State<StatsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: fullWidth ? color.withOpacity(0.1) : AppTheme.cardBackground,
+        color: fullWidth
+            ? color.withValues(alpha: 0.1)
+            : AppTheme.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        border: fullWidth ? Border.all(color: color.withOpacity(0.3)) : null,
+        border: fullWidth
+            ? Border.all(color: color.withValues(alpha: 0.3))
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,7 +402,7 @@ class _StatsScreenState extends State<StatsScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 16, color: color),
@@ -496,6 +500,7 @@ class _StatsScreenState extends State<StatsScreen> {
       ],
     );
   }
+
   // --- Restored Helper Methods ---
 
   Widget _buildChartToggleBtn(String label, int index) {
@@ -563,7 +568,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
     // Prevent future dates
     if (newDate.isAfter(DateTime.now())) {
-      // Optional: Shake or snackbar
+      // Optional: Shake or snack bar
       return;
     }
     _currentDate = newDate;
@@ -612,7 +617,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),

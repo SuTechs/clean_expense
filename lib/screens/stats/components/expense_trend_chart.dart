@@ -104,8 +104,8 @@ class ExpenseTrendChart extends StatelessWidget {
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.primaryNavy.withOpacity(0.3),
-                  AppTheme.primaryNavy.withOpacity(0.0),
+                  AppTheme.primaryNavy.withValues(alpha: 0.3),
+                  AppTheme.primaryNavy.withValues(alpha: 0.0),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,

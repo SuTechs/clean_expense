@@ -63,7 +63,7 @@ class ChatBubble extends StatelessWidget {
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -77,7 +77,7 @@ class ChatBubble extends StatelessWidget {
             if (note.isNotEmpty)
               Text(
                 note,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppTheme.primaryNavy,
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
@@ -90,7 +90,7 @@ class ChatBubble extends StatelessWidget {
             Text(
               "#$category",
               style: TextStyle(
-                color: textColor.withOpacity(0.8),
+                color: textColor.withValues(alpha: 0.8),
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -116,7 +116,10 @@ class ChatBubble extends StatelessWidget {
               alignment: Alignment.bottomRight,
               child: Text(
                 DateFormat('h:mm a').format(date),
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 10,
+                ),
               ),
             ),
           ],

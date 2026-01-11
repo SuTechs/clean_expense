@@ -35,7 +35,7 @@ class ExportScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: AppTheme.accentPurple.withOpacity(0.1),
+                color: AppTheme.accentPurple.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -81,7 +81,9 @@ class ExportScreen extends StatelessWidget {
       width: 200,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       decoration: BoxDecoration(
-        border: Border.all(color: AppTheme.textSecondary.withOpacity(0.2)),
+        border: Border.all(
+          color: AppTheme.textSecondary.withValues(alpha: 0.2),
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
