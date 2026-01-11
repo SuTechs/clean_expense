@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../data/bloc/app_bloc.dart';
 import '../../../data/bloc/expense_bloc.dart';
 import '../../../theme.dart';
 
@@ -36,14 +37,18 @@ class SpendingSummary extends StatelessWidget {
     final now = DateTime.now();
     final monthYear = DateFormat('MMM yyyy').format(now).toUpperCase();
 
+    final appBloc = context.watch<AppBloc>();
+    final showPercentage = appBloc.showPercentage;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         children: [
-          const Row(
+          // Header
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              const Row(
                 children: [
                   Icon(
                     Icons.pie_chart_outline,
@@ -61,7 +66,10 @@ class SpendingSummary extends StatelessWidget {
                   ),
                 ],
               ),
-              Icon(Icons.more_horiz, color: AppTheme.primaryNavy),
+              IconButton(
+                onPressed: () => _showOptions(context, appBloc),
+                icon: const Icon(Icons.more_horiz, color: AppTheme.primaryNavy),
+              ),
             ],
           ),
 
@@ -106,6 +114,7 @@ class SpendingSummary extends StatelessWidget {
                     item['amount'] as double,
                     item['percent'] as double,
                     currencyFormat,
+                    showPercentage,
                   ),
                 ),
               ],
@@ -116,12 +125,54 @@ class SpendingSummary extends StatelessWidget {
     );
   }
 
+  void _showOptions(BuildContext context, AppBloc appBloc) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text("Show Value"),
+                trailing: !appBloc.showPercentage
+                    ? const Icon(Icons.check, color: AppTheme.accentPurple)
+                    : null,
+                onTap: () {
+                  appBloc.showPercentage = false;
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: const Text("Show Percentage"),
+                trailing: appBloc.showPercentage
+                    ? const Icon(Icons.check, color: AppTheme.accentPurple)
+                    : null,
+                onTap: () {
+                  appBloc.showPercentage = true;
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildProgressRow(
     BuildContext context,
     String label,
     double amount,
     double percent,
     NumberFormat currencyFormat,
+    bool showPercentage,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -168,9 +219,11 @@ class SpendingSummary extends StatelessWidget {
 
               const SizedBox(width: 16),
 
-              // The Amount
+              // The Amount or Percentage
               Text(
-                "-${currencyFormat.format(amount)}",
+                showPercentage
+                    ? "${(percent * 100).toStringAsFixed(0)}%"
+                    : "-${currencyFormat.format(amount)}",
                 style: const TextStyle(
                   color: AppTheme.primaryNavy,
                   fontWeight: FontWeight.w500,

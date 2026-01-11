@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../data/bloc/app_bloc.dart';
 import '../../../data/bloc/expense_bloc.dart';
 import '../../../theme.dart';
 
@@ -20,7 +21,11 @@ class _BalanceCardState extends State<BalanceCard> {
   @override
   Widget build(BuildContext context) {
     final bloc = context.watch<ExpenseBloc>();
-    final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final appBloc = context.watch<AppBloc>();
+    final currencyFormat = NumberFormat.currency(
+      symbol: appBloc.currency,
+      decimalDigits: 0,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

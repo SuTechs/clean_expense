@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../../constants.dart';
 import '../api/hive/hive_service.dart';
 import '../api/hive/service_extension.dart';
@@ -56,6 +58,36 @@ class AppBloc extends AbstractBloc {
   bool get isShowOnboarding => _hive.getIsShowOnboarding();
 
   String get currentUserId => currentUser.id;
+
+  /// --- Preferences ---
+
+  late String _currency = _hive.getCurrency ?? _getDefaultCurrency();
+  String get currency => _currency;
+
+  set currency(String value) {
+    _currency = value;
+    _hive.setCurrency(value);
+    notifyListeners();
+  }
+
+  late bool _showPercentage = _hive.getShowPercentage;
+  bool get showPercentage => _showPercentage;
+
+  set showPercentage(bool value) {
+    _showPercentage = value;
+    _hive.setShowPercentage(value);
+    notifyListeners();
+  }
+
+  String _getDefaultCurrency() {
+    try {
+      // Get the default locale's currency symbol
+      final format = NumberFormat.simpleCurrency();
+      return format.currencySymbol;
+    } catch (_) {
+      return "₹"; // fallback
+    }
+  }
 
   Future<void> save() async {
     final user = currentUser;

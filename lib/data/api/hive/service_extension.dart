@@ -22,6 +22,15 @@ extension AppHiveService on HiveService {
 
     return showOnboarding;
   }
+
+  /// Settings
+  String? get getCurrency => stringBox.get('currency');
+  Future<void> setCurrency(String currency) =>
+      stringBox.put('currency', currency);
+
+  bool get getShowPercentage => boolBox.get('showPercentage') ?? false;
+  Future<void> setShowPercentage(bool value) =>
+      boolBox.put('showPercentage', value);
 }
 
 /// Extension methods for expense data class
