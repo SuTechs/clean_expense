@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'chat/add_expense_sheet.dart';
+import 'chat/chat_screen.dart';
 import 'home/home_screen.dart';
 import 'stats/stats_screen.dart';
 
@@ -25,9 +25,9 @@ class _MainScreenState extends State<MainScreen> {
       body: IndexedStack(index: _selectedIndex, children: _screens),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const AddExpenseScreen()),
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (context) => const ChatScreen()));
         },
         backgroundColor: theme.primaryColor,
         shape: const CircleBorder(),
