@@ -1,156 +1,167 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
-import '../../data/expense_provider.dart';
+import '../../theme.dart';
+import 'components/category_pie_chart.dart';
+import 'components/expense_trend_chart.dart';
 
-class StatsScreen extends StatelessWidget {
+class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
 
   @override
+  State<StatsScreen> createState() => _StatsScreenState();
+}
+
+class _StatsScreenState extends State<StatsScreen> {
+  String _selectedPeriod = "M"; // M = Month, Y = Year, etc.
+
+  @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<ExpenseProvider>(context);
-    final theme = Theme.of(context);
-
-    final categoryStats = provider.categoryBreakdown;
-    final totalOutgoing = provider.totalOutgoing;
-
     return Scaffold(
+      backgroundColor: AppTheme.scaffoldBackground,
       appBar: AppBar(
-        title: Text(
-          "Spending Stats",
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: theme.scaffoldBackgroundColor,
+        title: const Text("Statistics"),
+        centerTitle: true,
+        backgroundColor: AppTheme.scaffoldBackground,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download_rounded),
+            color: AppTheme.primaryNavy,
+            onPressed: () {},
+          ),
+        ],
       ),
-      body: categoryStats.isEmpty
-          ? Center(
-              child: Text(
-                "No expenses yet",
-                style: GoogleFonts.outfit(color: Colors.grey),
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Period Selector (Day, Week, Month, Year)
+            _buildPeriodSelector(),
+            const SizedBox(height: 24),
+
+            // 2. Total Spending Summary
+            const Center(
               child: Column(
                 children: [
-                  // Pie Chart Configuration
-                  SizedBox(
-                    height: 250,
-                    child: PieChart(
-                      PieChartData(
-                        sections: _generateSections(
-                          categoryStats,
-                          totalOutgoing,
-                        ),
-                        centerSpaceRadius: 40,
-                        sectionsSpace: 2,
-                      ),
+                  Text(
+                    "Total Spending (Jan)",
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 32),
-
-                  // Detailed List
-                  ...categoryStats.entries.map(
-                    (e) {
-                      final percentage = totalOutgoing == 0
-                          ? 0.0
-                          : (e.value / totalOutgoing);
-                      final color = _getColorForCategory(e.key);
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: color,
-                                      radius: 6,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      e.key,
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  "₹${e.value.toStringAsFixed(0)}",
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: percentage,
-                              backgroundColor: Colors.grey.shade200,
-                              color: color,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            const SizedBox(height: 4),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                "${(percentage * 100).toStringAsFixed(1)}%",
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ), // .toList() is not needed with spread operator if usage is correct, but map returns Iterable.
+                  SizedBox(height: 4),
+                  Text(
+                    "₹30,604",
+                    style: TextStyle(
+                      color: AppTheme.primaryNavy,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+
+            // 3. Main Trend Chart
+            Container(
+              height: 300,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.cardBackground,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Expense Trend",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  SizedBox(height: 24),
+                  Expanded(child: ExpenseTrendChart()),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // 4. Category Pie Chart & Breakdown
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.cardBackground,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Category Breakdown",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  SizedBox(height: 24),
+                  CategoryPieChart(),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 100), // Space for FAB
+          ],
+        ),
+      ),
     );
   }
 
-  List<PieChartSectionData> _generateSections(
-    Map<String, double> stats,
-    double total,
-  ) {
-    return stats.entries.map((e) {
-      final percentage = total == 0 ? 0.0 : (e.value / total);
-      final color = _getColorForCategory(e.key);
-      return PieChartSectionData(
-        color: color,
-        value: e.value,
-        title: '${(percentage * 100).toStringAsFixed(0)}%',
-        radius: 50,
-        titleStyle: GoogleFonts.outfit(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      );
-    }).toList();
-  }
-
-  Color _getColorForCategory(String category) {
-    // Deterministic colors based on string hash or simple logic
-    final colors = [
-      Color(0xFF6C63FF),
-      Color(0xFF00C853),
-      Color(0xFFFFD600),
-      Color(0xFFE53935),
-      Color(0xFF29B6F6),
-      Color(0xFFAB47BC),
-      Color(0xFFFF7043),
-    ];
-    return colors[category.hashCode.abs() % colors.length];
+  Widget _buildPeriodSelector() {
+    final periods = ["D", "W", "M", "Y", "All"];
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.inputFill,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: periods.map((p) {
+          final isSelected = _selectedPeriod == p;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedPeriod = p),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppTheme.cardBackground
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  p,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isSelected
+                        ? AppTheme.primaryNavy
+                        : AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 }
