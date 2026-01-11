@@ -26,7 +26,7 @@ class _SmartInputFieldState extends State<SmartInputField>
 
   // State
   TransactionType _selectedType = TransactionType.outgoing;
-  bool _showTypeSelector = false;
+  bool _isTypeSelectorExpanded = false;
   String? _categoryFilter;
 
   // Animation for Shaking
@@ -51,6 +51,15 @@ class _SmartInputFieldState extends State<SmartInputField>
 
     // Listen for '#' typing
     _controller.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onTextChanged);
+    _controller.dispose();
+    _focusNode.dispose();
+    _shakeController.dispose();
+    super.dispose();
   }
 
   void _onTextChanged() {
@@ -199,42 +208,7 @@ class _SmartInputFieldState extends State<SmartInputField>
             ),
           ),
 
-        // --- 2. Type Selector (Animated Pop-up) ---
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: _showTypeSelector ? 60 : 0,
-          curve: Curves.easeOut,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _buildTypeChip(
-                  TransactionType.outgoing,
-                  "Expense",
-                  Colors.red.shade100,
-                  Colors.red,
-                ),
-                const SizedBox(width: 12),
-                _buildTypeChip(
-                  TransactionType.incoming,
-                  "Income",
-                  Colors.green.shade100,
-                  Colors.green,
-                ),
-                const SizedBox(width: 12),
-                _buildTypeChip(
-                  TransactionType.invested,
-                  "Invest",
-                  Colors.blue.shade100,
-                  Colors.blue,
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // --- 3. The Input Field Area ---
+        // --- 2. Input bar container UI (from reference) ---
         AnimatedBuilder(
           animation: _shakeAnimation,
           builder: (context, child) {
@@ -242,7 +216,6 @@ class _SmartInputFieldState extends State<SmartInputField>
               offset: Offset(
                 _shakeAnimation.value *
                     double.parse(
-                      // Simple sine wave for shaking: -1, 1, -1, 1...
                       (1 - (2 * (_shakeController.value * 3).round() % 2))
                           .toString(),
                     ),
@@ -252,68 +225,155 @@ class _SmartInputFieldState extends State<SmartInputField>
             );
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
+                  color: Colors.black.withValues(alpha: 0.04),
+                  offset: const Offset(0, -4),
+                  blurRadius: 16,
                 ),
               ],
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Toggle Type Button
-                IconButton(
-                  onPressed: () =>
-                      setState(() => _showTypeSelector = !_showTypeSelector),
-                  icon: Icon(
-                    _showTypeSelector ? Icons.close : Icons.add_circle_outline,
-                    color: AppTheme.textSecondary,
-                    size: 28,
-                  ),
-                ),
-
-                const SizedBox(width: 8),
-
-                // Text Field
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.inputFill,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      minLines: 1,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        hintText: "Lunch #food 150...",
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 14),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // --- Expanded type selector (from reference) ---
+                  if (_isTypeSelectorExpanded)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.scaffoldBackground,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildTypeOption(
+                            TransactionType.outgoing,
+                            "Expense",
+                            Icons.arrow_upward_rounded,
+                          ),
+                          _buildTypeOption(
+                            TransactionType.incoming,
+                            "Income",
+                            Icons.arrow_downward_rounded,
+                          ),
+                          _buildTypeOption(
+                            TransactionType.invested,
+                            "Invest",
+                            Icons.trending_up_rounded,
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
 
-                const SizedBox(width: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // --- Collapsed type selector trigger (from reference) ---
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _isTypeSelectorExpanded = !_isTypeSelectorExpanded;
+                        }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _getTypeColor(
+                              _selectedType,
+                            ).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _isTypeSelectorExpanded
+                                  ? _getTypeColor(_selectedType)
+                                  : Colors.transparent,
+                            ),
+                          ),
+                          child: Icon(
+                            _getTypeIcon(_selectedType),
+                            color: _getTypeColor(_selectedType),
+                            size: 22,
+                          ),
+                        ),
+                      ),
 
-                // Send Button (Only visible if text exists)
-                if (_controller.text.trim().isNotEmpty)
-                  GestureDetector(
-                    onTap: _handleSend,
-                    child: const CircleAvatar(
-                      backgroundColor: AppTheme.primaryGreen,
-                      radius: 22,
-                      child: Icon(Icons.arrow_upward, color: Colors.white),
-                    ),
+                      const SizedBox(width: 12),
+
+                      // --- Text field (same behavior, reference styling) ---
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.scaffoldBackground,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: TextField(
+                            controller: _controller,
+                            focusNode: _focusNode,
+                            minLines: 1,
+                            maxLines: 4,
+                            textCapitalization: TextCapitalization.sentences,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: AppTheme.textPrimary,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: "Lunch #food 150...",
+                              hintStyle: TextStyle(
+                                color: AppTheme.textSecondary.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // --- Send button (keep your conditional visibility) ---
+                      if (_controller.text.trim().isNotEmpty)
+                        GestureDetector(
+                          onTap: _handleSend,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryNavy,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryNavy.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.arrow_upward_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -321,47 +381,73 @@ class _SmartInputFieldState extends State<SmartInputField>
     );
   }
 
-  Widget _buildTypeChip(
-    TransactionType type,
-    String label,
-    Color bg,
-    Color text,
-  ) {
+  // --- Type selector helpers (from reference) ---
+
+  Widget _buildTypeOption(TransactionType type, String label, IconData icon) {
     final isSelected = _selectedType == type;
+    final color = _getTypeColor(type);
+
     return GestureDetector(
-      onTap: () => setState(() {
-        _selectedType = type;
-        _showTypeSelector = false; // Auto hide after selection
-      }),
+      onTap: () {
+        setState(() {
+          _selectedType = type;
+          _isTypeSelectorExpanded = false;
+        });
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? bg : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
-          border: isSelected ? Border.all(color: text, width: 2) : null,
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
         ),
         child: Row(
           children: [
-            Icon(
-              type == TransactionType.incoming
-                  ? Icons.arrow_downward
-                  : type == TransactionType.outgoing
-                  ? Icons.arrow_upward
-                  : Icons.show_chart,
-              size: 16,
-              color: isSelected ? text : Colors.grey,
-            ),
+            Icon(icon, size: 16, color: color),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? text : Colors.grey,
-                fontWeight: FontWeight.bold,
+                color: isSelected
+                    ? AppTheme.textPrimary
+                    : AppTheme.textSecondary,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getTypeColor(TransactionType type) {
+    switch (type) {
+      case TransactionType.outgoing:
+        return AppTheme.dangerRed;
+      case TransactionType.incoming:
+        return AppTheme.primaryGreen;
+      case TransactionType.invested:
+        return AppTheme.accentPurple;
+    }
+  }
+
+  IconData _getTypeIcon(TransactionType type) {
+    switch (type) {
+      case TransactionType.outgoing:
+        return Icons.arrow_upward_rounded;
+      case TransactionType.incoming:
+        return Icons.arrow_downward_rounded;
+      case TransactionType.invested:
+        return Icons.trending_up_rounded;
+    }
   }
 }
