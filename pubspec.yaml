@@ -60,6 +60,7 @@ dependencies:
   in_app_update: ^4.2.4
   url_launcher: ^6.3.2
   fl_chart: ^1.1.1
+  collection: ^1.19.1
 
 
 

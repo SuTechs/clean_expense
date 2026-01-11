@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+
 import '../data/expense/expense.dart';
 
 class StatisticsHelper {
@@ -172,7 +173,7 @@ class StatisticsHelper {
   // 8. Projection (Simple linear projection for Month)
   double get projectedMonthlySpending {
     // Only valid if period is Month and current month
-    final now = DateTime.now();
+    // final now = DateTime.now();
     // Simplified logic: average daily * days in month
     // This is just a placeholder for advanced logic
     return averageDailySpend * 30;

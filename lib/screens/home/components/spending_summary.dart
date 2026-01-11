@@ -12,8 +12,12 @@ class SpendingSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.watch<ExpenseBloc>();
+    final appBloc = context.watch<AppBloc>();
     final breakdown = bloc.monthlyCategoryBreakdown;
-    final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final currencyFormat = NumberFormat.simpleCurrency(
+      name: appBloc.currency,
+      decimalDigits: 0,
+    );
 
     // Calculate total amount for share-of-total percentage
     double totalAmount = 0;
@@ -40,7 +44,6 @@ class SpendingSummary extends StatelessWidget {
     final now = DateTime.now();
     final monthYear = DateFormat('MMM yyyy').format(now).toUpperCase();
 
-    final appBloc = context.watch<AppBloc>();
     final showPercentage = appBloc.showPercentage;
 
     return Padding(
