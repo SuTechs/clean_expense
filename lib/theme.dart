@@ -16,6 +16,7 @@ class AppTheme {
 
   // Used for "Food & Drinks" tag/buttons
   static const Color accentBlue = Color(0xFF4A90E2);
+  static const Color accentPurple = Color(0xFF6C63FF);
 
   // Backgrounds
 
@@ -88,7 +89,6 @@ class AppTheme {
           color: textPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          fontFamily: 'Inter',
         ),
       ),
 
