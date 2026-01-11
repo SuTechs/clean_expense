@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/bloc/app_bloc.dart';
@@ -284,9 +284,7 @@ class SettingsScreen extends StatelessWidget {
 
   Future<void> _rateApp() async {
     final InAppReview inAppReview = InAppReview.instance;
-    if (await inAppReview.isAvailable()) {
-      await inAppReview.requestReview();
-    }
+    inAppReview.openStoreListing();
   }
 }
 

@@ -44,14 +44,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       return matchesSearch && matchesType && matchesDate;
     }).toList();
 
-    // Sort by date descending
-    filteredExpenses.sort((a, b) => b.date.compareTo(a.date));
+    // Group expenses by month and year
+    final groupedExpenses = <String, List<ExpenseData>>{};
+    for (var e in filteredExpenses) {
+      final key = DateFormat('MMMM yyyy').format(e.date);
+      groupedExpenses.putIfAbsent(key, () => []).add(e);
+    }
+
+    final monthKeys = groupedExpenses.keys.toList();
 
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppTheme.scaffoldBackground,
         elevation: 0,
+        centerTitle: false,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
@@ -63,6 +70,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           "Transactions",
           style: GoogleFonts.outfit(
             color: AppTheme.primaryNavy,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -76,6 +84,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
             onPressed: _showDateRangePicker,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -83,21 +92,28 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              onChanged: (v) => setState(() => _searchQuery = v),
-              decoration: InputDecoration(
-                hintText: "Search notes or categories...",
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: AppTheme.textSecondary,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.inputFill,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: TextField(
+                onChanged: (v) => setState(() => _searchQuery = v),
+                style: GoogleFonts.outfit(color: AppTheme.primaryNavy),
+                decoration: InputDecoration(
+                  hintText: "Search transactions...",
+                  hintStyle: GoogleFonts.outfit(
+                    color: AppTheme.primaryNavy,
+                    fontSize: 14,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: AppTheme.primaryNavy,
+                    size: 20,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                filled: true,
-                fillColor: AppTheme.cardBackground,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
             ),
           ),
@@ -118,23 +134,39 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
           if (_selectedDateRange != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
                 children: [
-                  Text(
-                    "${DateFormat('dd MMM').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM').format(_selectedDateRange!.end)}",
-                    style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      color: AppTheme.accentPurple,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => setState(() => _selectedDateRange = null),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      size: 14,
-                      color: AppTheme.accentPurple,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentPurple.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          "${DateFormat('dd MMM').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM').format(_selectedDateRange!.end)}",
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.accentPurple,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _selectedDateRange = null),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: AppTheme.accentPurple,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -149,10 +181,44 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ? _buildEmptyState()
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredExpenses.length,
-                    itemBuilder: (context, index) {
-                      final e = filteredExpenses[index];
-                      return _buildTransactionItem(e, currencyFormat);
+                    itemCount: monthKeys.length,
+                    itemBuilder: (context, monthIndex) {
+                      final monthKey = monthKeys[monthIndex];
+                      final monthExpenses = groupedExpenses[monthKey]!;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 16, 4, 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  monthKey,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryNavy,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  "${monthExpenses.length} transactions",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    color: AppTheme.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ...monthExpenses.map(
+                            (e) => _buildTransactionItem(e, currencyFormat),
+                          ),
+                        ],
+                      );
                     },
                   ),
           ),
@@ -164,21 +230,32 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Widget _buildFilterChip(TransactionType? type, String label) {
     final isSelected = _selectedType == type;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (selected) {
-          setState(() => _selectedType = selected ? type : null);
-        },
-        selectedColor: AppTheme.primaryNavy,
-        labelStyle: GoogleFonts.outfit(
-          color: isSelected ? Colors.white : AppTheme.primaryNavy,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedType = isSelected ? null : type),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primaryNavy : AppTheme.cardBackground,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: AppTheme.primaryNavy.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+            ],
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.outfit(
+              color: isSelected ? Colors.white : AppTheme.textSecondary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 14,
+            ),
+          ),
         ),
-        backgroundColor: AppTheme.cardBackground,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        side: BorderSide.none,
       ),
     );
   }
@@ -189,24 +266,32 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           // Icon
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color:
                   (isIncome
                           ? AppTheme.primaryGreen
                           : (isInvestment
                                 ? AppTheme.accentPurple
-                                : AppTheme.primaryNavy))
-                      .withOpacity(0.1),
+                                : AppTheme.textSecondary))
+                      .withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -220,9 +305,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   : (isInvestment
                         ? AppTheme.accentPurple
                         : AppTheme.primaryNavy),
+              size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
 
           // Info
           Expanded(
@@ -231,16 +317,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               children: [
                 Text(
                   e.note.isEmpty ? e.category : e.note,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
+                    fontSize: 16,
                     color: AppTheme.primaryNavy,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   "${DateFormat('dd MMM yyyy').format(e.date)} • ${e.category}",
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -248,12 +339,20 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           ),
 
           // Amount
-          Text(
-            "${isIncome ? "+" : "-"}${format.format(e.amount)}",
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              color: isIncome ? AppTheme.primaryGreen : AppTheme.primaryNavy,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "${isIncome ? "+" : "-"}${format.format(e.amount)}",
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: isIncome
+                      ? AppTheme.primaryGreen
+                      : AppTheme.primaryNavy,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -284,10 +383,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _showDateRangePicker() async {
+    final expenses = context.read<ExpenseBloc>().expenses;
+    final firstDate = expenses.isEmpty
+        ? DateTime.now()
+        : expenses.map((e) => e.date).reduce((a, b) => a.isBefore(b) ? a : b);
+
     final picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: firstDate,
+      lastDate: DateTime.now(),
       initialDateRange: _selectedDateRange,
       builder: (context, child) {
         return Theme(
