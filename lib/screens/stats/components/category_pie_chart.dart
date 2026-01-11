@@ -5,21 +5,21 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../data/utils/statistics_helper.dart';
 import '../../../theme.dart';
 
-class CategoryPieChart extends StatefulWidget {
+class CategoryPieChart extends StatelessWidget {
   final List<CategoryStat> categoryStats;
+  final int touchedIndex;
+  final Function(int) onTouch;
 
-  const CategoryPieChart({super.key, required this.categoryStats});
-
-  @override
-  State<CategoryPieChart> createState() => _CategoryPieChartState();
-}
-
-class _CategoryPieChartState extends State<CategoryPieChart> {
-  int touchedIndex = -1;
+  const CategoryPieChart({
+    super.key,
+    required this.categoryStats,
+    required this.touchedIndex,
+    required this.onTouch,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (widget.categoryStats.isEmpty) {
+    if (categoryStats.isEmpty) {
       return const Center(child: Text("No data available"));
     }
 
@@ -35,16 +35,23 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
             PieChartData(
               pieTouchData: PieTouchData(
                 touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        pieTouchResponse == null ||
-                        pieTouchResponse.touchedSection == null) {
-                      touchedIndex = -1;
-                      return;
+                  if (!event.isInterestedForInteractions ||
+                      pieTouchResponse == null ||
+                      pieTouchResponse.touchedSection == null) {
+                    // Don't auto-reset to -1 here to keep selection stable unless tapped outside?
+                    // Or let parent handle logic.
+                    // For now, only update if we have a valid touch
+                    if (event is FlTapUpEvent) {
+                      onTouch(-1);
                     }
-                    touchedIndex =
-                        pieTouchResponse.touchedSection!.touchedSectionIndex;
-                  });
+                    return;
+                  }
+                  final index =
+                      pieTouchResponse.touchedSection!.touchedSectionIndex;
+
+                  if (event is FlTapUpEvent && index >= 0) {
+                    onTouch(index);
+                  }
                 },
               ),
               borderData: FlBorderData(show: false),
@@ -56,26 +63,37 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
         ),
         const SizedBox(width: 24),
 
-        // 2. The Legend (Custom List) - Limit to top 5
+        // 2. The Legend (Limit to top 3)
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: widget.categoryStats.take(5).toList().asMap().entries.map(
-              (e) {
-                final index = e.key;
-                final stat = e.value;
-                final color = _getColor(index);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+            children: categoryStats.take(3).toList().asMap().entries.map((e) {
+              final index = e.key;
+              final stat = e.value;
+              final color = _getColor(index);
+              final isSelected = index == touchedIndex;
+
+              return GestureDetector(
+                onTap: () => onTouch(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4.0,
+                    horizontal: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppTheme.inputFill : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: _buildLegendItem(
                     color,
                     stat.category,
                     "${(stat.percent * 100).toStringAsFixed(1)}%",
                   ),
-                );
-              },
-            ).toList(),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ],
@@ -83,11 +101,11 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
   }
 
   List<PieChartSectionData> _generatingSections() {
-    return List.generate(widget.categoryStats.length, (i) {
+    return List.generate(categoryStats.length, (i) {
       final isTouched = i == touchedIndex;
       final fontSize = isTouched ? 16.0 : 0.0;
       final radius = isTouched ? 60.0 : 50.0;
-      final stat = widget.categoryStats[i];
+      final stat = categoryStats[i];
       final color = _getColor(i);
 
       return PieChartSectionData(
