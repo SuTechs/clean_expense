@@ -3,6 +3,7 @@ import 'dart:developer';
 import '../api/hive/hive_service.dart';
 import '../bloc/app_bloc.dart';
 import '../bloc/expense_bloc.dart';
+import 'expense/expense_command.dart';
 
 abstract class BaseAppCommand {
   static bool _init = false;
@@ -40,6 +41,9 @@ abstract class BaseAppCommand {
 
     log("BootstrapCommand - Init services");
     // Init services
+
+    // Fetch and sync expenses
+    ExpenseCommand().refresh(loadDummy: true);
 
     blocApp.hasBootstrapped = true;
     log("BootstrapCommand - Complete");

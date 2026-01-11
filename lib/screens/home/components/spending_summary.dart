@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../../data/bloc/expense_bloc.dart';
 import '../../../theme.dart';
 
 class SpendingSummary extends StatelessWidget {
@@ -7,20 +10,36 @@ class SpendingSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Dummy Data
-    final List<Map<String, dynamic>> items = [
-      {'label': 'Personal', 'amount': 28468, 'percent': 0.8}, // 80% width
-      {'label': 'Food & Drinks', 'amount': 1689, 'percent': 0.15},
-      {'label': 'Groceries', 'amount': 368, 'percent': 0.05},
-      {'label': 'Subscription', 'amount': 79, 'percent': 0.02},
-      {'label': 'Untagged', 'amount': 57905, 'percent': 1.0}, // Max width
-    ];
+    final bloc = context.watch<ExpenseBloc>();
+    final breakdown = bloc.monthlyCategoryBreakdown;
+    final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+
+    // Find the max amount for percentage calculation
+    double maxAmount = 0;
+    breakdown.forEach((category, amount) {
+      if (amount > maxAmount) maxAmount = amount;
+    });
+
+    final items = breakdown.entries.map((e) {
+      return {
+        'label': e.key,
+        'amount': e.value,
+        'percent': maxAmount > 0 ? e.value / maxAmount : 0.0,
+      };
+    }).toList();
+
+    // Sort items by amount descending
+    items.sort(
+      (a, b) => (b['amount'] as double).compareTo(a['amount'] as double),
+    );
+
+    final now = DateTime.now();
+    final monthYear = DateFormat('MMM yyyy').format(now).toUpperCase();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         children: [
-          // Header
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -57,9 +76,9 @@ class SpendingSummary extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "JAN 2026",
-                  style: TextStyle(
+                Text(
+                  monthYear,
+                  style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -68,13 +87,25 @@ class SpendingSummary extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
+                if (items.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Text(
+                        "No spending this month",
+                        style: TextStyle(color: AppTheme.textSecondary),
+                      ),
+                    ),
+                  ),
+
                 // Generate List Items
                 ...items.map(
                   (item) => _buildProgressRow(
                     context,
-                    item['label'],
-                    item['amount'],
-                    item['percent'],
+                    item['label'] as String,
+                    item['amount'] as double,
+                    item['percent'] as double,
+                    currencyFormat,
                   ),
                 ),
               ],
@@ -88,16 +119,16 @@ class SpendingSummary extends StatelessWidget {
   Widget _buildProgressRow(
     BuildContext context,
     String label,
-    int amount,
+    double amount,
     double percent,
+    NumberFormat currencyFormat,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final maxWidth = constraints.maxWidth;
+          final maxWidth = constraints.maxWidth - 100; // Leave room for amount
           // Calculate the width of the background bar based on percentage
-          // Min width 0, Max width = parent width
           final barWidth = maxWidth * percent;
 
           return Row(
@@ -139,7 +170,7 @@ class SpendingSummary extends StatelessWidget {
 
               // The Amount
               Text(
-                "-₹${amount.toString()}",
+                "-${currencyFormat.format(amount)}",
                 style: const TextStyle(
                   color: AppTheme.primaryNavy,
                   fontWeight: FontWeight.w500,

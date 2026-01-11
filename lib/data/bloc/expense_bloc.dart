@@ -87,4 +87,69 @@ class ExpenseBloc extends AbstractBloc {
     }
     return map;
   }
+
+  Map<String, double> get monthlyCategoryBreakdown {
+    final now = DateTime.now();
+    final map = <String, double>{};
+    for (var e in _expenses) {
+      if (e.type == TransactionType.outgoing &&
+          e.date.month == now.month &&
+          e.date.year == now.year) {
+        map[e.category] = (map[e.category] ?? 0) + e.amount;
+      }
+    }
+    return map;
+  }
+
+  /// returns daily cumulative balance for last [days], starting from the first entry found
+  MapEntry<int, List<double>> getBalanceHistory(int totalDays) {
+    if (_expenses.isEmpty) return const MapEntry(0, []);
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final limitDate = today.subtract(Duration(days: totalDays - 1));
+
+    // Find the earliest relevant expense date
+    DateTime? firstDate;
+    for (final e in _expenses) {
+      if (e.date.isAfter(limitDate) || e.date.isAtSameMomentAs(limitDate)) {
+        if (firstDate == null || e.date.isBefore(firstDate)) {
+          firstDate = e.date;
+        }
+      }
+    }
+
+    if (firstDate == null) return const MapEntry(0, []);
+
+    // Start from the beginning of that first day or the limitDate, whichever is later
+    final actualStart =
+        DateTime(
+          firstDate.year,
+          firstDate.month,
+          firstDate.day,
+        ).isBefore(limitDate)
+        ? limitDate
+        : DateTime(firstDate.year, firstDate.month, firstDate.day);
+
+    final daysToShow = today.difference(actualStart).inDays + 1;
+    final history = <double>[];
+
+    for (int i = 0; i < daysToShow; i++) {
+      final date = actualStart.add(Duration(days: i));
+      final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+      double balance = 0;
+      for (final e in _expenses) {
+        if (e.date.isBefore(endOfDay)) {
+          if (e.type == TransactionType.incoming) {
+            balance += e.amount;
+          } else {
+            balance -= e.amount;
+          }
+        }
+      }
+      history.add(balance);
+    }
+    return MapEntry(daysToShow, history);
+  }
 }
