@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../theme.dart';
-
-enum TransactionType { expense, income, investment }
+import '../../../../data/data/expense/expense.dart';
+import '../../../../theme.dart';
 
 class ChatBubble extends StatelessWidget {
   final String note;
@@ -23,49 +22,67 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUser =
-        type == TransactionType.expense || type == TransactionType.investment;
+    // Logic:
+    // Income -> Incoming Money -> Left Alignment (Like receiving a message)
+    // Expense -> Outgoing Money -> Right Alignment (Like sending a message)
+    // Investment -> Asset Building -> Right Alignment (User action) but distinct style
 
-    // Style configurations based on Type
-    final backgroundColor = type == TransactionType.income
-        ? const Color(0xFFD1FAE5) // Light Green
-        : const Color(0xFFFFE4E6); // Light Red
+    final isIncoming = type == TransactionType.incoming;
+    final alignment = isIncoming ? Alignment.centerLeft : Alignment.centerRight;
 
-    final textColor = type == TransactionType.income
-        ? const Color(0xFF065F46) // Dark Green
-        : const Color(0xFF9F1239); // Dark Red
+    // Colors
+    Color bubbleColor;
+    Color textColor;
+    Color amountColor;
 
-    final alignment = isUser ? Alignment.centerRight : Alignment.centerLeft;
-    final borderRadius = isUser
+    switch (type) {
+      case TransactionType.incoming:
+        bubbleColor = Colors.white;
+        textColor = AppTheme.primaryNavy;
+        amountColor = AppTheme.primaryGreen;
+        break;
+      case TransactionType.outgoing:
+        bubbleColor = AppTheme.primaryNavy;
+        textColor = Colors.white;
+        amountColor = Colors.white;
+        break;
+      case TransactionType.invested:
+        bubbleColor = AppTheme.accentPurple; // Distinct purple for investing
+        textColor = Colors.white;
+        amountColor = Colors.white;
+        break;
+    }
+
+    final borderRadius = isIncoming
         ? const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            bottomLeft: Radius.circular(20),
-            bottomRight: Radius.circular(20),
-            topRight: Radius.circular(4),
-          )
-        : const BorderRadius.only(
             topLeft: Radius.circular(4),
-            bottomRight: Radius.circular(20),
             topRight: Radius.circular(20),
             bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(4),
           );
 
     return Align(
       alignment: alignment,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        padding: const EdgeInsets.all(14),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: backgroundColor,
+          color: bubbleColor,
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -73,41 +90,62 @@ class ChatBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Note
-            if (note.isNotEmpty)
+            // Amount and Category Row
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  "${type == TransactionType.incoming
+                      ? '+'
+                      : type == TransactionType.outgoing
+                      ? '-'
+                      : ''}₹${amount.toStringAsFixed(0)}",
+                  style: TextStyle(
+                    color: amountColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isIncoming
+                        ? AppTheme.primaryNavy.withValues(alpha: 0.1)
+                        : Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    "#$category",
+                    style: TextStyle(
+                      color: isIncoming
+                          ? AppTheme.primaryNavy.withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.9),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            if (note.isNotEmpty) ...[
+              const SizedBox(height: 6),
               Text(
                 note,
-                style: const TextStyle(
-                  color: AppTheme.primaryNavy,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-
-            const SizedBox(height: 4),
-
-            // Tag
-            Text(
-              "#$category",
-              style: TextStyle(
-                color: textColor.withValues(alpha: 0.8),
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Amount
-            Text(
-              "${type == TransactionType.income ? '+' : ''}₹${amount.toStringAsFixed(0)}",
-              style: TextStyle(
-                color: textColor,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Inter',
-              ),
-            ),
+            ],
 
             const SizedBox(height: 4),
 
@@ -116,8 +154,8 @@ class ChatBubble extends StatelessWidget {
               alignment: Alignment.bottomRight,
               child: Text(
                 DateFormat('h:mm a').format(date),
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
+                style: TextStyle(
+                  color: textColor.withValues(alpha: 0.6),
                   fontSize: 10,
                 ),
               ),

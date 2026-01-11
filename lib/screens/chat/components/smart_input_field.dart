@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme.dart';
-import 'chat_bubble.dart';
+import '../../../../data/command/commands.dart';
+import '../../../../data/data/expense/expense.dart';
+import '../../../../theme.dart';
 
 class SmartInputField extends StatefulWidget {
   final Function(
@@ -24,24 +25,13 @@ class _SmartInputFieldState extends State<SmartInputField>
   final FocusNode _focusNode = FocusNode();
 
   // State
-  TransactionType _selectedType = TransactionType.expense;
+  TransactionType _selectedType = TransactionType.outgoing;
   bool _showTypeSelector = false;
   String? _categoryFilter;
 
   // Animation for Shaking
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
-
-  // Dummy Categories for Autocomplete
-  final List<String> _allCategories = [
-    'food',
-    'transport',
-    'bills',
-    'groceries',
-    'shopping',
-    'salary',
-    'investment',
-  ];
 
   @override
   void initState() {
@@ -68,7 +58,6 @@ class _SmartInputFieldState extends State<SmartInputField>
     final selection = _controller.selection;
 
     // Simple logic to find if we are currently typing a tag
-    // Finds the word at cursor. If it starts with #, trigger autocomplete
     if (selection.baseOffset >= 0) {
       final textBeforeCursor = text.substring(0, selection.baseOffset);
       final words = textBeforeCursor.split(' ');
@@ -87,9 +76,16 @@ class _SmartInputFieldState extends State<SmartInputField>
     final text = _controller.text;
 
     // 1. Parsing Logic
-    // Extract Amount (find first number)
-    final amountRegExp = RegExp(r'\d+(\.\d+)?');
-    final amountMatch = amountRegExp.firstMatch(text);
+    // Extract Amount (find first number NOT inside a word, ideally)
+    // Simple regex for floating point numbers
+    final amountRegExp = RegExp(r'[0-9]+(\.[0-9]+)?');
+    final allNumbers = amountRegExp.allMatches(text);
+
+    // Heuristic: If multiple numbers, take the last one? Or first?
+    // User: "Dinner 500 at KFC". Amount 500.
+    // User: "2 Burgers 500". Amount 500.
+    // Let's take the *last* number found as amount, assume quantity/street numbers come earlier.
+    final amountMatch = allNumbers.isNotEmpty ? allNumbers.last : null;
 
     // Extract Category (find first word starting with #)
     final categoryRegExp = RegExp(r'#(\w+)');
@@ -117,11 +113,19 @@ class _SmartInputFieldState extends State<SmartInputField>
     final amount = double.parse(amountMatch.group(0)!);
     final category = categoryMatch.group(1)!;
 
-    // Remove amount and category from text to get the Note
-    String note = text
-        .replaceAll(amountRegExp, '')
-        .replaceAll(categoryRegExp, '')
-        .trim();
+    // Remove amount matching string and category matching string to get Note
+    // Caution: removing "500" might remove it from "500 Main St".
+    // Better to remove based on indices?
+    // For simplicity, let's remove the *matched instances*.
+
+    String note = text;
+    // Remove category
+    note = note.replaceFirst(categoryMatch.group(0)!, '');
+    // Remove amount (using the match index to be safe, but replaceFirst is okay if we assume uniqueness or just remove first occurrence of that amount string)
+    // Actually using match range is safer.
+    note = note.replaceRange(amountMatch.start, amountMatch.end, '');
+
+    note = note.trim();
     // Clean up extra spaces
     note = note.replaceAll(RegExp(r'\s+'), ' ');
 
@@ -151,6 +155,9 @@ class _SmartInputFieldState extends State<SmartInputField>
 
   @override
   Widget build(BuildContext context) {
+    // Get suggestions dynamically
+    final allCategories = BaseAppCommand.blocExpense.allCategories;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -162,8 +169,12 @@ class _SmartInputFieldState extends State<SmartInputField>
             color: AppTheme.scaffoldBackground,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              children: _allCategories
-                  .where((c) => c.startsWith(_categoryFilter!))
+              children: allCategories
+                  .where(
+                    (c) => c.toLowerCase().startsWith(
+                      _categoryFilter!.toLowerCase(),
+                    ),
+                  )
                   .map(
                     (c) => Padding(
                       padding: const EdgeInsets.only(
@@ -199,21 +210,21 @@ class _SmartInputFieldState extends State<SmartInputField>
             child: Row(
               children: [
                 _buildTypeChip(
-                  TransactionType.expense,
+                  TransactionType.outgoing,
                   "Expense",
                   Colors.red.shade100,
                   Colors.red,
                 ),
                 const SizedBox(width: 12),
                 _buildTypeChip(
-                  TransactionType.income,
+                  TransactionType.incoming,
                   "Income",
                   Colors.green.shade100,
                   Colors.green,
                 ),
                 const SizedBox(width: 12),
                 _buildTypeChip(
-                  TransactionType.investment,
+                  TransactionType.invested,
                   "Invest",
                   Colors.blue.shade100,
                   Colors.blue,
@@ -332,9 +343,9 @@ class _SmartInputFieldState extends State<SmartInputField>
         child: Row(
           children: [
             Icon(
-              type == TransactionType.income
+              type == TransactionType.incoming
                   ? Icons.arrow_downward
-                  : type == TransactionType.expense
+                  : type == TransactionType.outgoing
                   ? Icons.arrow_upward
                   : Icons.show_chart,
               size: 16,

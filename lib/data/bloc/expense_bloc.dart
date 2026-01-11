@@ -74,8 +74,79 @@ class ExpenseBloc extends AbstractBloc {
 
   /// ----------------- Category Breakdown ------------------
 
+  static const List<String> defaultCategories = [
+    'food',
+    'transport',
+    'bills',
+    'shopping',
+    'entertainment',
+    'health',
+    'education',
+    'salary',
+    'investment',
+  ];
+
   List<String> get allCategories {
-    return _expenses.map((e) => e.category).toSet().toList();
+    final used = _expenses.map((e) => e.category).toSet();
+    used.addAll(defaultCategories);
+    final sorted = used.toList()..sort();
+    return sorted;
+  }
+
+  List<String> get usedCategories {
+    return _expenses.map((e) => e.category).toSet().toList()..sort();
+  }
+
+  Map<TransactionType, List<String>> get categoriesByType {
+    final map = <TransactionType, Set<String>>{
+      TransactionType.incoming: {},
+      TransactionType.outgoing: {},
+      TransactionType.invested: {},
+    };
+
+    for (final e in _expenses) {
+      // Filter out deleted if you want, or keep them? Usually we hide deleted.
+      // Assuming "deleted" creates a pseudo-category.
+      if (e.category.toLowerCase() != "deleted") {
+        map[e.type]?.add(e.category);
+      }
+    }
+
+    return map.map((key, value) => MapEntry(key, value.toList()..sort()));
+  }
+
+  void renameCategory(String oldName, String newName) {
+    bool changed = false;
+    for (int i = 0; i < _expenses.length; i++) {
+      if (_expenses[i].category == oldName) {
+        _expenses[i] = _expenses[i].copyWith(category: newName);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      _expenses = copyList(_expenses);
+      notifyListeners();
+    }
+  }
+
+  void deleteCategory(String categoryName, {required bool deleteTransactions}) {
+    if (deleteTransactions) {
+      _expenses.removeWhere((e) => e.category == categoryName);
+    } else {
+      // Mark as deleted (rename to "deleted")
+      for (int i = 0; i < _expenses.length; i++) {
+        if (_expenses[i].category == categoryName) {
+          _expenses[i] = _expenses[i].copyWith(category: "deleted");
+        }
+      }
+    }
+    _expenses = copyList(_expenses);
+    notifyListeners();
+  }
+
+  int getCategoryCount(String categoryName) {
+    return _expenses.where((e) => e.category == categoryName).length;
   }
 
   Map<String, double> get categoryBreakdown {

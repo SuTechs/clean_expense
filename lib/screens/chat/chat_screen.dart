@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../data/bloc/expense_bloc.dart';
+import '../../data/command/expense/expense_command.dart';
+import '../../data/data/expense/expense.dart';
 import '../../theme.dart';
+import '../category/manage_category_screen.dart';
 import 'components/chat_bubble.dart';
 import 'components/smart_input_field.dart';
 
@@ -12,52 +18,31 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  // Dummy Initial Data
-  final List<ChatBubble> _messages = [
-    ChatBubble(
-      note: "Salary Credited",
-      amount: 45000,
-      category: "salary",
-      date: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
-      type: TransactionType.income,
-    ),
-    ChatBubble(
-      note: "Lunch at KFC",
-      amount: 540,
-      category: "food",
-      date: DateTime.now().subtract(const Duration(hours: 4)),
-      type: TransactionType.expense,
-    ),
-  ];
-
   final ScrollController _scrollController = ScrollController();
+  final Uuid _uuid = const Uuid();
 
-  void _addTransaction(
+  Future<void> _addTransaction(
     String note,
     double amount,
     String category,
     TransactionType type,
-  ) {
-    setState(() {
-      _messages.add(
-        ChatBubble(
-          note: note,
-          amount: amount,
-          category: category,
-          date: DateTime.now(),
-          type: type,
-        ),
-      );
-    });
+  ) async {
+    final newExpense = ExpenseData(
+      id: _uuid.v4(),
+      amount: amount,
+      category: category.toLowerCase(),
+      date: DateTime.now(),
+      type: type,
+      note: note,
+    );
 
-    // Scroll to bottom after frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    });
+    // Use Command to add expense (handles Hive/Bloc/Server)
+    await ExpenseCommand().addExpense(newExpense);
+
+    // Scroll effect handled by reverse list usually, but if we want to ensure visibility:
+    // With reverse: true, adding item puts it at bottom (index 0).
+    // It should auto-animate if we are already at bottom?
+    // Actually standard ListView with reverse:true sticks to bottom.
   }
 
   @override
@@ -79,7 +64,12 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: const Icon(Icons.tune), // Settings slider icon
             color: AppTheme.primaryNavy,
             onPressed: () {
-              // TODO: Open Category Manager
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ManageCategoryScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -88,19 +78,39 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           // 1. Chat List Area
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.only(bottom: 20, top: 10),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                // Show Date Header if needed logic here...
-                return _messages[index];
+            child: Consumer<ExpenseBloc>(
+              builder: (context, bloc, child) {
+                // Assuming expenses are stored chronologically (oldest -> newest)
+                // We want newest at bottom. ListView(reverse: true) expects first item to be bottom.
+                // So we reverse the chronological list: [newest, ..., oldest]
+                final expenses = bloc.expenses.reversed.toList();
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  padding: const EdgeInsets.only(bottom: 20, top: 10),
+                  itemCount: expenses.length,
+                  itemBuilder: (context, index) {
+                    final expense = expenses[index];
+                    return ChatBubble(
+                      note: expense.note,
+                      amount: expense.amount,
+                      category: expense.category,
+                      date: expense.date,
+                      type: expense.type,
+                    );
+                  },
+                );
               },
             ),
           ),
 
           // 2. Smart Input Area
-          SmartInputField(onSend: _addTransaction),
+          Consumer<ExpenseBloc>(
+            builder: (context, bloc, child) {
+              return SmartInputField(onSend: _addTransaction);
+            },
+          ),
         ],
       ),
     );
