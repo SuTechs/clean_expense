@@ -41,8 +41,9 @@ class NativeHiveService extends HiveService {
     // clear user data
     box<UserData>().clear();
 
-    box<bool>().clear();
+    boolBox.clear();
     stringBox.clear();
+    expenseBox.clear();
   }
 
   @override
@@ -50,4 +51,7 @@ class NativeHiveService extends HiveService {
 
   @override
   Box<bool> get boolBox => box<bool>();
+
+  @override
+  Box<ExpenseData> get expenseBox => box<ExpenseData>();
 }

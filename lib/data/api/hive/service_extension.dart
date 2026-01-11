@@ -1,3 +1,4 @@
+import '../../data/expense/expense.dart';
 import '../../data/user/user.dart';
 import 'hive_service.dart';
 
@@ -20,5 +21,28 @@ extension AppHiveService on HiveService {
     if (showOnboarding) box<bool>().put('isShowOnboarding', false);
 
     return showOnboarding;
+  }
+}
+
+/// Extension methods for expense data class
+extension ExpenseDataExtension on HiveService {
+  /// Add expense
+  Future<void> addExpense(ExpenseData expense) async {
+    await expenseBox.put(expense.id, expense);
+  }
+
+  /// Delete expense
+  Future<void> deleteExpense(ExpenseData expense) async {
+    await expenseBox.delete(expense.id);
+  }
+
+  /// Update expense
+  Future<void> updateExpense(ExpenseData expense) async {
+    await expenseBox.put(expense.id, expense);
+  }
+
+  /// Read expenses
+  List<ExpenseData> readExpenses() {
+    return expenseBox.values.toList();
   }
 }
