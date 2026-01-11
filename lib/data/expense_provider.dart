@@ -7,10 +7,10 @@ import 'data/expense/expense.dart';
 class ExpenseProvider extends ChangeNotifier {
   static const String boxName = 'Expense';
 
-  Box<Expense>? _box;
-  List<Expense> _expenses = [];
+  Box<ExpenseData>? _box;
+  List<ExpenseData> _expenses = [];
 
-  List<Expense> get expenses => _expenses;
+  List<ExpenseData> get expenses => _expenses;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -21,7 +21,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     if (Hive.isBoxOpen(boxName)) {
-      _box = Hive.box<Expense>(boxName);
+      _box = Hive.box<ExpenseData>(boxName);
     } else {
       // It should be opened in HiveService, but just in case
       // _box = await Hive.openBox<Expense>(boxName);
@@ -36,7 +36,7 @@ class ExpenseProvider extends ChangeNotifier {
     }
 
     if (Hive.isBoxOpen(boxName)) {
-      _box = Hive.box<Expense>(boxName);
+      _box = Hive.box<ExpenseData>(boxName);
       _expenses = _box!.values.toList();
       _expenses.sort((a, b) => b.date.compareTo(a.date)); // Sort by date desc
     }
@@ -62,7 +62,7 @@ class ExpenseProvider extends ChangeNotifier {
   }) async {
     if (_box == null) return;
 
-    final expense = Expense(
+    final expense = ExpenseData(
       id: const Uuid().v4(),
       amount: amount,
       category: category,
@@ -78,8 +78,8 @@ class ExpenseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteExpense(Expense expense) async {
-    await expense.delete();
+  Future<void> deleteExpense(ExpenseData expense) async {
+    // await expense.delete();
     _expenses.remove(expense);
     notifyListeners();
   }

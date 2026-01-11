@@ -24,7 +24,7 @@ class NativeHiveService extends HiveService {
     await Hive.openBox<bool>("bool");
 
     await Hive.openBox<UserData>('UserData');
-    await Hive.openBox<Expense>('Expense');
+    await Hive.openBox<ExpenseData>('Expense');
 
     // add more boxes here
   }

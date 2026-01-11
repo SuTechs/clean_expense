@@ -31,7 +31,7 @@ types:
         index: 1
       invested:
         index: 2
-  Expense:
+  ExpenseData:
     typeId: 2
     nextIndex: 6
     fields:
