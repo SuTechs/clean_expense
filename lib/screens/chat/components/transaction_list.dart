@@ -19,8 +19,15 @@ class TransactionList extends StatelessWidget {
 
     return Consumer<ExpenseBloc>(
       builder: (context, bloc, child) {
-        final expenses = bloc.expenses.toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+        // Filter out future dated expenses and sort by date descending
+        final expenses =
+            bloc.expenses
+                .where((e) => e.date.isBefore(today) || _isSameDay(e.date, now))
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
 
         if (expenses.isEmpty) {
           return SliverFillRemaining(
