@@ -129,7 +129,10 @@ class _SmartInputFieldState extends State<SmartInputField>
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ChatThemeProvider>().theme;
-    final allCategories = BaseAppCommand.blocExpense.allCategories;
+    // Get type-specific category suggestions
+    final suggestions = BaseAppCommand.blocExpense.getSuggestionsForType(
+      _selectedType,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -142,7 +145,7 @@ class _SmartInputFieldState extends State<SmartInputField>
             color: theme.inputContainerBg,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              children: allCategories
+              children: suggestions
                   .where(
                     (c) => c.toLowerCase().startsWith(
                       _categoryFilter!.toLowerCase(),

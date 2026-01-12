@@ -7,10 +7,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../data/command/expense/expense_command.dart';
 import '../../data/data/expense/expense.dart';
-import '../category/manage_category_screen.dart';
 import 'components/chat_background.dart';
+import 'components/chat_settings_sheet.dart';
 import 'components/smart_input_field.dart';
-import 'components/theme_selector_sheet.dart';
 import 'components/transaction_list.dart';
 import 'theme/chat_theme_provider.dart';
 
@@ -163,37 +162,34 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 const SizedBox(width: 4),
 
-                // Avatar - TAP TO CHANGE THEME
-                GestureDetector(
-                  onTap: () => ThemeSelectorSheet.show(context, themeProvider),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          theme.statusDot.withValues(alpha: 0.25),
-                          theme.statusDot.withValues(alpha: 0.15),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.statusDot.withValues(alpha: 0.4),
-                        width: 1.5,
-                      ),
+                // Avatar
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.statusDot.withValues(alpha: 0.25),
+                        theme.statusDot.withValues(alpha: 0.15),
+                      ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        'logo-big.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Icons.account_balance_wallet_rounded,
-                          color: theme.statusDot,
-                          size: 20,
-                        ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.statusDot.withValues(alpha: 0.4),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      'logo-big.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: theme.statusDot,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -229,7 +225,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            'Tap avatar for themes',
+                            'Active now',
                             style: TextStyle(
                               color: theme.secondaryText,
                               fontSize: 11,
@@ -244,7 +240,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 // Settings button
                 IconButton(
-                  onPressed: _navigateToSettings,
+                  onPressed: () => _showSettings(themeProvider),
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -267,26 +263,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _navigateToSettings() {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const ManageCategoryScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-                .animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
-    );
+  void _showSettings(ChatThemeProvider themeProvider) {
+    ChatSettingsSheet.show(context, themeProvider);
   }
 }

@@ -247,6 +247,41 @@ class ChatThemes {
     dateText: Color(0x80CBD5E1),
   );
 
+  /// Carbon Theme - Pure dark with warm accents
+  /// AMOLED-friendly with true blacks
+  static const carbon = ChatTheme(
+    id: 'carbon',
+    name: 'Carbon',
+    emoji: '⚫',
+    backgroundGradient: [
+      Color(0xFF0A0A0A), // Near black
+      Color(0xFF101010),
+      Color(0xFF0D0D0D),
+    ],
+    patternColor: Color(0x08FFFFFF),
+    appBarBg: Color(0x15FFFFFF),
+    appBarText: Color(0xFFE5E5E5),
+    statusDot: Color(0xFFEF4444),
+    // Incoming - Green (classic)
+    incomingBg: Color(0x2522C55E),
+    incomingAccent: Color(0xFF4ADE80),
+    incomingBorder: Color(0x4022C55E),
+    // Outgoing - Red/Orange (warm)
+    outgoingBg: Color(0x25F97316),
+    outgoingAccent: Color(0xFFFB923C),
+    outgoingBorder: Color(0x40F97316),
+    // Invested - Gold (premium)
+    investedBg: Color(0x25EAB308),
+    investedAccent: Color(0xFFFACC15),
+    investedBorder: Color(0x40EAB308),
+    inputContainerBg: Color(0xFF141414),
+    inputFieldBg: Color(0xFF1A1A1A),
+    inputBorder: Color(0x30FFFFFF),
+    primaryText: Color(0xFFF5F5F5),
+    secondaryText: Color(0xFF737373),
+    dateText: Color(0x70A3A3A3),
+  );
+
   /// All available themes
   static const List<ChatTheme> all = [
     ocean,
@@ -254,6 +289,7 @@ class ChatThemes {
     forest,
     lavender,
     midnight,
+    carbon,
   ];
 
   /// Get theme by ID

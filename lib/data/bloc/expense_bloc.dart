@@ -74,27 +74,137 @@ class ExpenseBloc extends AbstractBloc {
 
   /// ----------------- Category Breakdown ------------------
 
-  static const List<String> defaultCategories = [
+  /// Default expense categories (single lowercase words)
+  static const List<String> expenseCategories = [
     'food',
+    'groceries',
     'transport',
+    'fuel',
     'bills',
+    'utilities',
+    'rent',
     'shopping',
+    'clothing',
+    'electronics',
     'entertainment',
+    'movies',
+    'games',
+    'subscriptions',
     'health',
+    'medicine',
+    'fitness',
+    'gym',
     'education',
-    'salary',
-    'investment',
+    'books',
+    'courses',
+    'travel',
+    'vacation',
+    'insurance',
+    'repairs',
+    'maintenance',
+    'gifts',
+    'donations',
+    'personal',
+    'beauty',
+    'pets',
+    'kids',
+    'family',
+    'taxes',
+    'fees',
+    'dining',
+    'coffee',
+    'snacks',
+    'alcohol',
+    'internet',
+    'phone',
+    'streaming',
+    'parking',
+    'laundry',
+    'household',
   ];
 
+  /// Default income categories
+  static const List<String> incomeCategories = [
+    'salary',
+    'bonus',
+    'freelance',
+    'consulting',
+    'commission',
+    'tips',
+    'refund',
+    'cashback',
+    'gift',
+    'dividend',
+    'interest',
+    'rental',
+    'royalty',
+    'sales',
+    'reimbursement',
+    'allowance',
+    'pension',
+    'lottery',
+  ];
+
+  /// Default investment categories
+  static const List<String> investmentCategories = [
+    'stocks',
+    'crypto',
+    'mutual',
+    'bonds',
+    'gold',
+    'silver',
+    'property',
+    'realestate',
+    'ppf',
+    'nps',
+    'fd',
+    'rd',
+    'sip',
+    'etf',
+    'futures',
+    'options',
+    'commodities',
+    'retirement',
+    'savings',
+  ];
+
+  /// Get suggested categories for a transaction type
+  List<String> getSuggestionsForType(TransactionType type) {
+    final usedForType = _expenses
+        .where((e) => e.type == type)
+        .map((e) => e.category.toLowerCase())
+        .toSet();
+
+    List<String> defaults;
+    switch (type) {
+      case TransactionType.incoming:
+        defaults = incomeCategories;
+        break;
+      case TransactionType.outgoing:
+        defaults = expenseCategories;
+        break;
+      case TransactionType.invested:
+        defaults = investmentCategories;
+        break;
+    }
+
+    // Combine used + defaults, prioritizing used ones
+    final combined = <String>{...usedForType, ...defaults};
+    return combined.toList()..sort();
+  }
+
   List<String> get allCategories {
-    final used = _expenses.map((e) => e.category).toSet();
-    used.addAll(defaultCategories);
+    final used = _expenses.map((e) => e.category.toLowerCase()).toSet();
+    used.addAll(expenseCategories);
+    used.addAll(incomeCategories);
+    used.addAll(investmentCategories);
     final sorted = used.toList()..sort();
     return sorted;
   }
 
   List<String> get usedCategories {
-    return _expenses.map((e) => e.category).toSet().toList()..sort();
+    return _expenses.map((e) => e.category.toLowerCase()).toSet().toList()
+      ..sort();
   }
 
   Map<TransactionType, List<String>> get categoriesByType {
@@ -105,10 +215,8 @@ class ExpenseBloc extends AbstractBloc {
     };
 
     for (final e in _expenses) {
-      // Filter out deleted if you want, or keep them? Usually we hide deleted.
-      // Assuming "deleted" creates a pseudo-category.
       if (e.category.toLowerCase() != "deleted") {
-        map[e.type]?.add(e.category);
+        map[e.type]?.add(e.category.toLowerCase());
       }
     }
 
