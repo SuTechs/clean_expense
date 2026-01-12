@@ -1,32 +1,23 @@
-import 'package:hive_ce/hive.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-enum TransactionType {
-  incoming, // Credit
+part 'expense.freezed.dart';
+part 'expense.g.dart';
 
-  outgoing, // Debit
+enum TransactionType { incoming, outgoing, invested }
 
-  invested, // Investment
-}
+@freezed
+abstract class ExpenseData with _$ExpenseData {
+  const ExpenseData._();
 
-class Expense extends HiveObject {
-  final String id;
+  const factory ExpenseData({
+    required String id,
+    required double amount,
+    required String category,
+    required DateTime date,
+    required TransactionType type,
+    required String note,
+  }) = _ExpenseData;
 
-  final double amount;
-
-  final String category;
-
-  final DateTime date;
-
-  final TransactionType type;
-
-  final String note;
-
-  Expense({
-    required this.id,
-    required this.amount,
-    required this.category,
-    required this.date,
-    required this.type,
-    required this.note,
-  });
+  factory ExpenseData.fromJson(Map<String, dynamic> json) =>
+      _$ExpenseDataFromJson(json);
 }

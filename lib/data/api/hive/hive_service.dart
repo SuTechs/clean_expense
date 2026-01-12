@@ -1,5 +1,6 @@
 import 'package:hive_ce/hive.dart';
 
+import '../../data/expense/expense.dart';
 import 'hive_native.dart';
 
 class HiveFactory {
@@ -31,4 +32,6 @@ abstract class HiveService {
   Box<String> get stringBox;
 
   Box<bool> get boolBox;
+
+  Box<ExpenseData> get expenseBox;
 }

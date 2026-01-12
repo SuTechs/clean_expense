@@ -1,108 +1,307 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
-import '../../theme.dart';
-import 'components/chat_bubble.dart';
+import '../../data/command/expense/expense_command.dart';
+import '../../data/data/expense/expense.dart';
+import 'components/chat_background.dart';
+import 'components/chat_settings_sheet.dart';
 import 'components/smart_input_field.dart';
+import 'components/transaction_list.dart';
+import 'theme/chat_theme_provider.dart';
 
+/// Main chat screen for adding and viewing transactions.
+/// Wrapped with ChatThemeProvider for theme management.
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
+
+  /// Navigate to ChatScreen with slide-up + fade animation
+  static void animateGo(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const ChatScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 0.15);
+          const end = Offset.zero;
+          final slideTween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: Curves.easeOutCubic));
+          final fadeTween = Tween<double>(
+            begin: 0.0,
+            end: 1.0,
+          ).chain(CurveTween(curve: Curves.easeOut));
+          return SlideTransition(
+            position: animation.drive(slideTween),
+            child: FadeTransition(
+              opacity: animation.drive(fadeTween),
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+      ),
+    );
+  }
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  // Dummy Initial Data
-  final List<ChatBubble> _messages = [
-    ChatBubble(
-      note: "Salary Credited",
-      amount: 45000,
-      category: "salary",
-      date: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
-      type: TransactionType.income,
-    ),
-    ChatBubble(
-      note: "Lunch at KFC",
-      amount: 540,
-      category: "food",
-      date: DateTime.now().subtract(const Duration(hours: 4)),
-      type: TransactionType.expense,
-    ),
-  ];
-
   final ScrollController _scrollController = ScrollController();
+  final Uuid _uuid = const Uuid();
 
-  void _addTransaction(
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addTransaction(
     String note,
     double amount,
     String category,
     TransactionType type,
-  ) {
-    setState(() {
-      _messages.add(
-        ChatBubble(
-          note: note,
-          amount: amount,
-          category: category,
-          date: DateTime.now(),
-          type: type,
-        ),
-      );
-    });
+  ) async {
+    final newExpense = ExpenseData(
+      id: _uuid.v4(),
+      amount: amount,
+      category: category.toLowerCase(),
+      date: DateTime.now(),
+      type: type,
+      note: note,
+    );
 
-    // Scroll to bottom after frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    await ExpenseCommand().addExpense(newExpense);
+
+    if (_scrollController.hasClients) {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.scaffoldBackground,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          color: AppTheme.primaryNavy,
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text("Add Transactions"),
-        centerTitle: true,
-        backgroundColor: AppTheme.scaffoldBackground,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune), // Settings slider icon
-            color: AppTheme.primaryNavy,
-            onPressed: () {
-              // TODO: Open Category Manager
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // 1. Chat List Area
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.only(bottom: 20, top: 10),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                // Show Date Header if needed logic here...
-                return _messages[index];
-              },
-            ),
-          ),
+    return ChangeNotifierProvider(
+      create: (_) => ChatThemeProvider(),
+      child: Consumer<ChatThemeProvider>(
+        builder: (context, themeProvider, _) {
+          final theme = themeProvider.theme;
+          final isDark = theme.id == 'midnight';
 
-          // 2. Smart Input Area
-          SmartInputField(onSend: _addTransaction),
-        ],
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: isDark
+                ? SystemUiOverlayStyle.light
+                : SystemUiOverlayStyle.dark,
+            child: Scaffold(
+              body: GestureDetector(
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: Stack(
+                  children: [
+                    // 1. Animated Background
+                    Positioned.fill(child: ChatBackground(theme: theme)),
+
+                    // 2. Main Content
+                    Column(
+                      children: [
+                        // Fixed App Bar with glass effect
+                        _buildGlassAppBar(context, themeProvider),
+
+                        // Scrollable Transaction List
+                        Expanded(
+                          child: CustomScrollView(
+                            controller: _scrollController,
+                            reverse: true,
+                            physics: const BouncingScrollPhysics(
+                              parent: AlwaysScrollableScrollPhysics(),
+                            ),
+                            slivers: const [
+                              TransactionList(),
+                              SliverPadding(padding: EdgeInsets.only(top: 8)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // 3. Fixed Bottom Input Field
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: SmartInputField(onSend: _addTransaction),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildGlassAppBar(
+    BuildContext context,
+    ChatThemeProvider themeProvider,
+  ) {
+    final theme = themeProvider.theme;
+
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+          decoration: BoxDecoration(
+            color: theme.appBarBg,
+            border: Border(
+              bottom: BorderSide(
+                color: theme.patternColor.withValues(alpha: 0.2),
+                width: 0.5,
+              ),
+            ),
+          ),
+          child: SizedBox(
+            height: 60,
+            child: Row(
+              children: [
+                // Back button
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.patternColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 16,
+                      color: theme.appBarText,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 4),
+
+                // Avatar - tap to open settings
+                GestureDetector(
+                  onTap: () => _showSettings(themeProvider),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.statusDot.withValues(alpha: 0.25),
+                          theme.statusDot.withValues(alpha: 0.15),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.statusDot.withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'logo-big.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: theme.statusDot,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Name and status - tap to open settings
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showSettings(themeProvider),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Clean Expense',
+                          style: TextStyle(
+                            color: theme.appBarText,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: theme.statusDot,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Active now',
+                              style: TextStyle(
+                                color: theme.secondaryText,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Settings button
+                IconButton(
+                  onPressed: () => _showSettings(themeProvider),
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.patternColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.tune_rounded,
+                      size: 18,
+                      color: theme.appBarText,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSettings(ChatThemeProvider themeProvider) {
+    ChatSettingsSheet.show(context, themeProvider);
   }
 }

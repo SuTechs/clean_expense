@@ -24,7 +24,7 @@ class NativeHiveService extends HiveService {
     await Hive.openBox<bool>("bool");
 
     await Hive.openBox<UserData>('UserData');
-    await Hive.openBox<Expense>('Expense');
+    await Hive.openBox<ExpenseData>('ExpenseData');
 
     // add more boxes here
   }
@@ -41,8 +41,9 @@ class NativeHiveService extends HiveService {
     // clear user data
     box<UserData>().clear();
 
-    box<bool>().clear();
+    boolBox.clear();
     stringBox.clear();
+    expenseBox.clear();
   }
 
   @override
@@ -50,4 +51,7 @@ class NativeHiveService extends HiveService {
 
   @override
   Box<bool> get boolBox => box<bool>();
+
+  @override
+  Box<ExpenseData> get expenseBox => box<ExpenseData>();
 }

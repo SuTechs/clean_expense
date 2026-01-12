@@ -99,17 +99,17 @@ class TransactionTypeAdapter extends TypeAdapter<TransactionType> {
           typeId == other.typeId;
 }
 
-class ExpenseAdapter extends TypeAdapter<Expense> {
+class ExpenseDataAdapter extends TypeAdapter<ExpenseData> {
   @override
   final typeId = 2;
 
   @override
-  Expense read(BinaryReader reader) {
+  ExpenseData read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Expense(
+    return ExpenseData(
       id: fields[0] as String,
       amount: (fields[1] as num).toDouble(),
       category: fields[2] as String,
@@ -120,7 +120,7 @@ class ExpenseAdapter extends TypeAdapter<Expense> {
   }
 
   @override
-  void write(BinaryWriter writer, Expense obj) {
+  void write(BinaryWriter writer, ExpenseData obj) {
     writer
       ..writeByte(6)
       ..writeByte(0)
@@ -143,7 +143,7 @@ class ExpenseAdapter extends TypeAdapter<Expense> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ExpenseAdapter &&
+      other is ExpenseDataAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

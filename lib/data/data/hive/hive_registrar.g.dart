@@ -2,12 +2,12 @@
 // Do not modify
 // Check in to version control
 
-import 'package:hive_ce/hive_ce.dart';
 import 'package:expense/data/data/hive/hive_adapters.dart';
+import 'package:hive_ce/hive_ce.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
-    registerAdapter(ExpenseAdapter());
+    registerAdapter(ExpenseDataAdapter());
     registerAdapter(TransactionTypeAdapter());
     registerAdapter(UserDataAdapter());
   }
@@ -15,7 +15,7 @@ extension HiveRegistrar on HiveInterface {
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
-    registerAdapter(ExpenseAdapter());
+    registerAdapter(ExpenseDataAdapter());
     registerAdapter(TransactionTypeAdapter());
     registerAdapter(UserDataAdapter());
   }

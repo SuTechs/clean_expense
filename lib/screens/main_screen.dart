@@ -23,16 +23,16 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (context) => const ChatScreen()));
-        },
-        backgroundColor: theme.primaryColor,
-        shape: const CircleBorder(),
-        elevation: 4,
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
+      floatingActionButton: Hero(
+        tag: 'chat_input_hero',
+        child: FloatingActionButton(
+          heroTag: null,
+          onPressed: () => ChatScreen.animateGo(context),
+          backgroundColor: theme.primaryColor,
+          shape: const CircleBorder(),
+          elevation: 4,
+          child: const Icon(Icons.add, color: Colors.white, size: 32),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(

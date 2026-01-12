@@ -1,7 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../../data/bloc/app_bloc.dart';
+import '../../../data/bloc/expense_bloc.dart';
 import '../../../theme.dart';
 
 class BalanceCard extends StatefulWidget {
@@ -16,6 +20,13 @@ class _BalanceCardState extends State<BalanceCard> {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = context.watch<ExpenseBloc>();
+    final appBloc = context.watch<AppBloc>();
+    final currencyFormat = NumberFormat.currency(
+      symbol: appBloc.currency,
+      decimalDigits: 0,
+    );
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       clipBehavior: Clip.antiAlias,
@@ -54,14 +65,14 @@ class _BalanceCardState extends State<BalanceCard> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      _isVisible ? "₹1,407" : "(¬_¬)", // The hidden face
-                      style: TextStyle(
+                      _isVisible
+                          ? currencyFormat.format(bloc.totalBalance)
+                          : "(¬_¬)", // The hidden face
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryNavy,
-                        letterSpacing: _isVisible
-                            ? -1
-                            : 2, // Space out the face
+                        letterSpacing: -1,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -84,65 +95,107 @@ class _BalanceCardState extends State<BalanceCard> {
           SizedBox(
             height: 120,
             width: double.infinity,
-            child: LineChart(
-              LineChartData(
-                gridData: const FlGridData(show: false),
-                titlesData: const FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: 10,
-                minY: 0,
-                maxY: 6,
-                lineTouchData: const LineTouchData(enabled: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 3),
-                      FlSpot(1, 4),
-                      FlSpot(2, 3),
-                      FlSpot(3, 3.5),
-                      FlSpot(4, 3.0),
-                      FlSpot(5, 3.8),
-                      FlSpot(6, 3.2),
-                      FlSpot(7, 3.6),
-                      FlSpot(8, 6), // The big spike
-                      FlSpot(9, 3.5),
-                      FlSpot(10, 3.8),
-                    ],
-                    isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: AppTheme.primaryGreen,
-                    barWidth: 2.5,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: AppTheme.greenGraphGradient,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+            child: Consumer<ExpenseBloc>(
+              builder: (context, bloc, _) {
+                final result = bloc.getBalanceHistory(90);
+                final days = result.key;
+                final history = result.value;
 
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-            child: Row(
-              children: [
-                const Expanded(child: Divider(color: AppTheme.dividerColor)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    "Last 90 days",
-                    style: GoogleFonts.outfit(
-                      color: AppTheme.textPrimary,
-                      fontSize: 10,
+                if (history.isEmpty) {
+                  return Center(
+                    child: Text(
+                      "No data for this period",
+                      style: GoogleFonts.outfit(
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                ),
-                const Expanded(child: Divider(color: AppTheme.dividerColor)),
-              ],
+                  );
+                }
+
+                double minY = history[0];
+                double maxY = history[0];
+                for (final v in history) {
+                  if (v < minY) minY = v;
+                  if (v > maxY) maxY = v;
+                }
+
+                // Add some padding to Y axis
+                final range = maxY - minY;
+                minY = minY - (range * 0.1);
+                maxY = maxY + (range * 0.1);
+
+                // If all values are same
+                if (range == 0) {
+                  minY -= 100;
+                  maxY += 100;
+                }
+
+                final spots = history.asMap().entries.map((e) {
+                  return FlSpot(e.key.toDouble(), e.value);
+                }).toList();
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: LineChart(
+                        LineChartData(
+                          gridData: const FlGridData(show: false),
+                          titlesData: const FlTitlesData(show: false),
+                          borderData: FlBorderData(show: false),
+                          minX: 0,
+                          maxX: (days - 1).toDouble(),
+                          minY: minY,
+                          maxY: maxY,
+                          lineTouchData: const LineTouchData(enabled: false),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: spots,
+                              isCurved: true,
+                              curveSmoothness: 0.1,
+                              color: AppTheme.primaryGreen,
+                              barWidth: 2,
+                              isStrokeCapRound: true,
+                              dotData: const FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                gradient: AppTheme.greenGraphGradient,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Divider(color: AppTheme.dividerColor),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              "Last $days days",
+                              style: GoogleFonts.outfit(
+                                color: AppTheme.textPrimary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          const Expanded(
+                            child: Divider(color: AppTheme.dividerColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 16),
@@ -153,9 +206,18 @@ class _BalanceCardState extends State<BalanceCard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatItem("INCOMING", "+₹15,237"),
-                _buildStatItem("OUTGOING", "-₹1,50,237"),
-                _buildStatItem("INVESTED", "₹1,407"),
+                _buildStatItem(
+                  "INCOMING",
+                  "+${currencyFormat.format(bloc.totalIncoming)}",
+                ),
+                _buildStatItem(
+                  "OUTGOING",
+                  "-${currencyFormat.format(bloc.totalOutgoing)}",
+                ),
+                _buildStatItem(
+                  "INVESTED",
+                  currencyFormat.format(bloc.totalInvested),
+                ),
               ],
             ),
           ),
