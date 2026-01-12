@@ -9,7 +9,7 @@ import '../theme/chat_theme.dart';
 import '../theme/chat_theme_provider.dart';
 
 class SmartInputField extends StatefulWidget {
-  final Function(
+  final Future<void> Function(
     String note,
     double amount,
     String category,
@@ -77,7 +77,7 @@ class _SmartInputFieldState extends State<SmartInputField>
     setState(() {});
   }
 
-  void _handleSend(ChatTheme theme) {
+  Future<void> _handleSend(ChatTheme theme) async {
     final text = _controller.text;
     final result = TransactionParserService().parse(text);
 
@@ -101,14 +101,33 @@ class _SmartInputFieldState extends State<SmartInputField>
     }
 
     HapticFeedback.mediumImpact();
-    widget.onSend(
-      result.notes ?? '',
-      result.amount!,
-      result.category!,
-      _selectedType,
-    );
-    _controller.clear();
-    setState(() => _categoryFilter = null);
+
+    try {
+      await widget.onSend(
+        result.notes ?? '',
+        result.amount!,
+        result.category!,
+        _selectedType,
+      );
+      _controller.clear();
+      setState(() => _categoryFilter = null);
+    } catch (e) {
+      HapticFeedback.heavyImpact();
+      _shakeController.forward();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to add transaction: $e"),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 88),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _insertTag(String tag) {
@@ -323,6 +342,8 @@ class _SmartInputFieldState extends State<SmartInputField>
                                 ),
                                 isDense: true,
                               ),
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => _handleSend(theme),
                             ),
                           ),
 

@@ -6,9 +6,12 @@ class ExpenseBloc extends AbstractBloc {
 
   List<ExpenseData> get expenses => _expenses;
 
+  Map<TransactionType, List<String>> _suggestionsCache = {};
+
   /// refresh - update expenses
   void refresh(List<ExpenseData> newExpenses) {
     _expenses = newExpenses;
+    _suggestionsCache.clear();
     notifyListeners();
   }
 
@@ -17,6 +20,7 @@ class ExpenseBloc extends AbstractBloc {
     _expenses.add(expense);
 
     _expenses = copyList(_expenses);
+    _suggestionsCache.clear();
     notifyListeners();
   }
 
@@ -25,6 +29,7 @@ class ExpenseBloc extends AbstractBloc {
     _expenses.removeWhere((e) => e.id == id);
 
     _expenses = copyList(_expenses);
+    _suggestionsCache.clear();
     notifyListeners();
   }
 
@@ -34,6 +39,7 @@ class ExpenseBloc extends AbstractBloc {
       _expenses[index] = expense;
 
       _expenses = copyList(_expenses);
+      _suggestionsCache.clear();
       notifyListeners();
     }
   }
@@ -170,6 +176,10 @@ class ExpenseBloc extends AbstractBloc {
 
   /// Get suggested categories for a transaction type, sorted by usage frequency
   List<String> getSuggestionsForType(TransactionType type) {
+    if (_suggestionsCache.containsKey(type)) {
+      return _suggestionsCache[type]!;
+    }
+
     // Count usage frequency for each category of this type
     final usageCount = <String, int>{};
     for (final e in _expenses) {
@@ -206,6 +216,7 @@ class ExpenseBloc extends AbstractBloc {
       return a.compareTo(b); // Alphabetical for same count
     });
 
+    _suggestionsCache[type] = sortedList;
     return sortedList;
   }
 
@@ -304,19 +315,24 @@ class ExpenseBloc extends AbstractBloc {
     final today = DateTime(now.year, now.month, now.day);
     final limitDate = today.subtract(Duration(days: totalDays - 1));
 
+    // 1. Sort expenses by date if not already sorted (usually they might not be)
+    final sortedExpenses = List<ExpenseData>.from(_expenses)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    if (sortedExpenses.isEmpty) return const MapEntry(0, []);
+
     // Find the earliest relevant expense date
-    DateTime? firstDate;
-    for (final e in _expenses) {
-      if (e.date.isAfter(limitDate) || e.date.isAtSameMomentAs(limitDate)) {
-        if (firstDate == null || e.date.isBefore(firstDate)) {
-          firstDate = e.date;
-        }
-      }
-    }
+    DateTime? firstDate = sortedExpenses.first.date;
+    // Check if we have any expense within limit?
+    // Actually the logic was "start from first found expense OR limitDate".
 
-    if (firstDate == null) return const MapEntry(0, []);
+    // Let's stick to the logic: "Show from first transaction date up to today, but max totalDays"
+    // But if first transaction is way back, we clip?
+    // The original logic was: "Start from the beginning of that first day or the limitDate, whichever is later"
 
-    // Start from the beginning of that first day or the limitDate, whichever is later
+    // Find first date > limitDate? No, if firstDate is 2020 and limit is 2024, max(first, limit) = limit.
+    // If firstDate is 2025 and limit is 2024, max(first, limit) = first.
+
     final actualStart =
         DateTime(
           firstDate.year,
@@ -329,22 +345,51 @@ class ExpenseBloc extends AbstractBloc {
     final daysToShow = today.difference(actualStart).inDays + 1;
     final history = <double>[];
 
-    for (int i = 0; i < daysToShow; i++) {
-      final date = actualStart.add(Duration(days: i));
-      final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+    // 2. Calculate initial balance BEFORE actualStart
+    double currentBalance = 0;
+    int expenseIndex = 0;
 
-      double balance = 0;
-      for (final e in _expenses) {
-        if (e.date.isBefore(endOfDay)) {
-          if (e.type == TransactionType.incoming) {
-            balance += e.amount;
-          } else {
-            balance -= e.amount;
-          }
-        }
+    // Sum up all expenses strictly before actualStart (start of the first day in graph)
+    while (expenseIndex < sortedExpenses.length &&
+        sortedExpenses[expenseIndex].date.isBefore(actualStart)) {
+      final e = sortedExpenses[expenseIndex];
+      if (e.type == TransactionType.incoming) {
+        currentBalance += e.amount;
+      } else {
+        currentBalance -= e.amount;
       }
-      history.add(balance);
+      expenseIndex++;
     }
+
+    // 3. Iterate through each day in the range
+    for (int i = 0; i < daysToShow; i++) {
+      final dayStart = actualStart.add(Duration(days: i));
+      final dayEnd = DateTime(
+        dayStart.year,
+        dayStart.month,
+        dayStart.day,
+        23,
+        59,
+        59,
+        999,
+      );
+
+      // Process expenses for this day
+      while (expenseIndex < sortedExpenses.length &&
+          (sortedExpenses[expenseIndex].date.isBefore(dayEnd) ||
+              sortedExpenses[expenseIndex].date.isAtSameMomentAs(dayEnd))) {
+        final e = sortedExpenses[expenseIndex];
+        if (e.type == TransactionType.incoming) {
+          currentBalance += e.amount;
+        } else {
+          currentBalance -= e.amount;
+        }
+        expenseIndex++;
+      }
+
+      history.add(currentBalance);
+    }
+
     return MapEntry(daysToShow, history);
   }
 }
