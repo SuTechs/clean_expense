@@ -168,12 +168,16 @@ class ExpenseBloc extends AbstractBloc {
     'savings',
   ];
 
-  /// Get suggested categories for a transaction type
+  /// Get suggested categories for a transaction type, sorted by usage frequency
   List<String> getSuggestionsForType(TransactionType type) {
-    final usedForType = _expenses
-        .where((e) => e.type == type)
-        .map((e) => e.category.toLowerCase())
-        .toSet();
+    // Count usage frequency for each category of this type
+    final usageCount = <String, int>{};
+    for (final e in _expenses) {
+      if (e.type == type) {
+        final cat = e.category.toLowerCase();
+        usageCount[cat] = (usageCount[cat] ?? 0) + 1;
+      }
+    }
 
     List<String> defaults;
     switch (type) {
@@ -188,9 +192,21 @@ class ExpenseBloc extends AbstractBloc {
         break;
     }
 
-    // Combine used + defaults, prioritizing used ones
-    final combined = <String>{...usedForType, ...defaults};
-    return combined.toList()..sort();
+    // Combine used + defaults
+    final allCategories = <String>{...usageCount.keys, ...defaults};
+    final sortedList = allCategories.toList();
+
+    // Sort: used categories first (by frequency desc), then defaults alphabetically
+    sortedList.sort((a, b) {
+      final aCount = usageCount[a] ?? 0;
+      final bCount = usageCount[b] ?? 0;
+      if (aCount != bCount) {
+        return bCount.compareTo(aCount); // Higher count first
+      }
+      return a.compareTo(b); // Alphabetical for same count
+    });
+
+    return sortedList;
   }
 
   List<String> get allCategories {

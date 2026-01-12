@@ -26,106 +26,113 @@ class ChatSettingsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = themeProvider.theme;
     final appBloc = context.watch<AppBloc>();
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      decoration: BoxDecoration(
-        color: theme.inputContainerBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.secondaryText.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
+    // Listen to theme changes for real-time updates
+    return ListenableBuilder(
+      listenable: themeProvider,
+      builder: (context, _) {
+        final theme = themeProvider.theme;
 
-            // Title
-            Text(
-              'Chat Settings',
-              style: TextStyle(
-                color: theme.primaryText,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Options
-            _buildOptionTile(
-              context,
-              icon: Icons.category_rounded,
-              title: 'Manage Categories',
-              subtitle: 'Add, edit or delete categories',
-              theme: theme,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ManageCategoryScreen(),
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          decoration: BoxDecoration(
+            color: theme.inputContainerBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.secondaryText.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-
-            _buildOptionTile(
-              context,
-              icon: Icons.currency_exchange_rounded,
-              title: 'Currency',
-              subtitle: appBloc.currency,
-              theme: theme,
-              onTap: () => _showCurrencyPicker(context, appBloc, theme),
-            ),
-            const SizedBox(height: 24),
-
-            // Theme section
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Theme',
-                style: TextStyle(
-                  color: theme.secondaryText,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
+                const SizedBox(height: 20),
 
-            // Theme grid
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: themeProvider.availableThemes
-                  .map(
-                    (t) => _ThemeCard(
-                      chatTheme: t,
-                      isSelected: t.id == theme.id,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        themeProvider.setTheme(t);
-                      },
+                // Title
+                Text(
+                  'Chat Settings',
+                  style: TextStyle(
+                    color: theme.primaryText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Options
+                _buildOptionTile(
+                  context,
+                  icon: Icons.category_rounded,
+                  title: 'Manage Categories',
+                  subtitle: 'Add, edit or delete categories',
+                  theme: theme,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ManageCategoryScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                _buildOptionTile(
+                  context,
+                  icon: Icons.currency_exchange_rounded,
+                  title: 'Currency',
+                  subtitle: appBloc.currency,
+                  theme: theme,
+                  onTap: () => _showCurrencyPicker(context, appBloc, theme),
+                ),
+                const SizedBox(height: 24),
+
+                // Theme section
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Theme',
+                    style: TextStyle(
+                      color: theme.secondaryText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
                     ),
-                  )
-                  .toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Theme grid
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: themeProvider.availableThemes
+                      .map(
+                        (t) => _ThemeCard(
+                          chatTheme: t,
+                          isSelected: t.id == theme.id,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            themeProvider.setTheme(t);
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../data/bloc/app_bloc.dart';
 import '../../../data/bloc/expense_bloc.dart';
 import '../../../data/data/expense/expense.dart';
 import '../theme/chat_theme.dart';
@@ -60,7 +61,11 @@ class TransactionList extends StatelessWidget {
                   children: [
                     if (showDateHeader)
                       DateHeader(date: expense.date, theme: theme),
-                    _TransactionBubble(expense: expense, theme: theme),
+                    _TransactionBubble(
+                      expense: expense,
+                      theme: theme,
+                      currency: context.watch<AppBloc>().currency,
+                    ),
                   ],
                 ),
               );
@@ -139,8 +144,13 @@ class _AnimatedTransactionItemState extends State<_AnimatedTransactionItem>
 class _TransactionBubble extends StatefulWidget {
   final ExpenseData expense;
   final ChatTheme theme;
+  final String currency;
 
-  const _TransactionBubble({required this.expense, required this.theme});
+  const _TransactionBubble({
+    required this.expense,
+    required this.theme,
+    required this.currency,
+  });
 
   @override
   State<_TransactionBubble> createState() => _TransactionBubbleState();
@@ -167,6 +177,7 @@ class _TransactionBubbleState extends State<_TransactionBubble> {
           date: widget.expense.date,
           type: widget.expense.type,
           theme: widget.theme,
+          currency: widget.currency,
         ),
       ),
     );

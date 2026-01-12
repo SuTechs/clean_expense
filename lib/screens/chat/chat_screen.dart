@@ -162,34 +162,37 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 const SizedBox(width: 4),
 
-                // Avatar
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.statusDot.withValues(alpha: 0.25),
-                        theme.statusDot.withValues(alpha: 0.15),
-                      ],
+                // Avatar - tap to open settings
+                GestureDetector(
+                  onTap: () => _showSettings(themeProvider),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.statusDot.withValues(alpha: 0.25),
+                          theme.statusDot.withValues(alpha: 0.15),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.statusDot.withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.statusDot.withValues(alpha: 0.4),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'logo-big.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: theme.statusDot,
-                        size: 20,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'logo-big.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: theme.statusDot,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
@@ -197,44 +200,48 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 const SizedBox(width: 12),
 
-                // Name and status
+                // Name and status - tap to open settings
                 Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Clean Expense',
-                        style: TextStyle(
-                          color: theme.appBarText,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
+                  child: GestureDetector(
+                    onTap: () => _showSettings(themeProvider),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Clean Expense',
+                          style: TextStyle(
+                            color: theme.appBarText,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: theme.statusDot,
-                              shape: BoxShape.circle,
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: theme.statusDot,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Active now',
-                            style: TextStyle(
-                              color: theme.secondaryText,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                            const SizedBox(width: 5),
+                            Text(
+                              'Active now',
+                              style: TextStyle(
+                                color: theme.secondaryText,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 

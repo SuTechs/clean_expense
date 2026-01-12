@@ -15,6 +15,7 @@ class ChatBubble extends StatelessWidget {
   final DateTime date;
   final TransactionType type;
   final ChatTheme theme;
+  final String currency;
 
   const ChatBubble({
     super.key,
@@ -24,6 +25,7 @@ class ChatBubble extends StatelessWidget {
     required this.date,
     required this.type,
     required this.theme,
+    this.currency = '₹',
   });
 
   @override
@@ -100,6 +102,7 @@ class ChatBubble extends StatelessWidget {
                         amount: amount,
                         type: type,
                         color: accentColor,
+                        currency: currency,
                       ),
                       const SizedBox(height: 10),
                       _BubbleFooter(
@@ -269,11 +272,13 @@ class _BubbleAmount extends StatelessWidget {
   final double amount;
   final TransactionType type;
   final Color color;
+  final String currency;
 
   const _BubbleAmount({
     required this.amount,
     required this.type,
     required this.color,
+    required this.currency,
   });
 
   @override
@@ -284,7 +289,7 @@ class _BubbleAmount extends StatelessWidget {
         ? '-'
         : '';
     return Text(
-      "$symbol₹${amount.toStringAsFixed(0)}",
+      "$symbol$currency${amount.toStringAsFixed(0)}",
       style: TextStyle(
         color: color,
         fontSize: 26,
