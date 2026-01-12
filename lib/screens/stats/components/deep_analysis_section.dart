@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../data/utils/statistics_helper.dart';
+import '../../../data/utils/string_utils.dart';
 import '../../../theme.dart';
 import 'analysis_tile.dart';
 
@@ -32,7 +33,9 @@ class DeepAnalysisSection extends StatelessWidget {
 
         AnalysisTile(
           title: "Top Spending Category",
-          value: stats.topCategory?.key ?? "N/A",
+          value: stats.topCategory != null
+              ? StringUtils.titleCase(stats.topCategory!.key)
+              : "N/A",
           subtitle: stats.topCategory != null
               ? "$currency${stats.topCategory!.value.toStringAsFixed(0)}"
               : "",
@@ -51,8 +54,12 @@ class DeepAnalysisSection extends StatelessWidget {
         AnalysisTile(
           title: "Largest Single Expense",
           value: stats.largestSingleExpense?.note.isNotEmpty == true
-              ? stats.largestSingleExpense!.note
-              : (stats.largestSingleExpense?.category ?? "N/A"),
+              ? StringUtils.titleCase(stats.largestSingleExpense!.note)
+              : (stats.largestSingleExpense != null
+                    ? StringUtils.titleCase(
+                        stats.largestSingleExpense!.category,
+                      )
+                    : "N/A"),
           subtitle: stats.largestSingleExpense != null
               ? "$currency${stats.largestSingleExpense!.amount.toStringAsFixed(0)}"
               : "",
@@ -62,7 +69,9 @@ class DeepAnalysisSection extends StatelessWidget {
 
         AnalysisTile(
           title: "Most Frequent Category",
-          value: stats.mostFrequentCategory ?? "N/A",
+          value: stats.mostFrequentCategory != null
+              ? StringUtils.titleCase(stats.mostFrequentCategory!)
+              : "N/A",
           subtitle: "By transaction count",
           icon: Icons.repeat_rounded,
           color: Colors.purpleAccent,
