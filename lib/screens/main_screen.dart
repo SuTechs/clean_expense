@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'components/nav_item.dart';
 import 'chat/chat_screen.dart';
 import 'home/home_screen.dart';
 import 'stats/stats_screen.dart';
@@ -45,36 +46,21 @@ class _MainScreenState extends State<MainScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(0, CupertinoIcons.home, "Home"),
+              NavItem(
+                icon: CupertinoIcons.home,
+                label: "Home",
+                isSelected: _selectedIndex == 0,
+                onTap: () => setState(() => _selectedIndex = 0),
+              ),
               const SizedBox(width: 48), // Space for FAB
-              _buildNavItem(1, CupertinoIcons.graph_square, "Stats"),
+              NavItem(
+                icon: CupertinoIcons.graph_square,
+                label: "Stats",
+                isSelected: _selectedIndex == 1,
+                onTap: () => setState(() => _selectedIndex = 1),
+              ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _selectedIndex == index;
-    final color = isSelected ? Theme.of(context).primaryColor : Colors.grey;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-      borderRadius: BorderRadius.circular(30),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 26),
-            // Text(label, style: TextStyle(color: color, fontSize: 10))
-            // Minimalist look often relies on icons only or very subtle text
-          ],
         ),
       ),
     );
