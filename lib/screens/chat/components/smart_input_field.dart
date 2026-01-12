@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
-import '../../../../data/command/commands.dart';
-import '../../../../data/data/expense/expense.dart';
-import '../../../../theme.dart';
+import '../../../data/command/commands.dart';
+import '../../../data/data/expense/expense.dart';
+import '../../../data/utils/transaction_parser_service.dart';
+import '../theme/chat_theme.dart';
+import '../theme/chat_theme_provider.dart';
 
 class SmartInputField extends StatefulWidget {
   final Function(
@@ -24,19 +28,16 @@ class _SmartInputFieldState extends State<SmartInputField>
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
-  // State
   TransactionType _selectedType = TransactionType.outgoing;
   bool _isTypeSelectorExpanded = false;
   String? _categoryFilter;
 
-  // Animation for Shaking
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
 
   @override
   void initState() {
     super.initState();
-    // Shake Animation Setup
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -48,8 +49,6 @@ class _SmartInputFieldState extends State<SmartInputField>
     _shakeController.addStatusListener((status) {
       if (status == AnimationStatus.completed) _shakeController.reset();
     });
-
-    // Listen for '#' typing
     _controller.addListener(_onTextChanged);
   }
 
@@ -66,49 +65,31 @@ class _SmartInputFieldState extends State<SmartInputField>
     final text = _controller.text;
     final selection = _controller.selection;
 
-    // Simple logic to find if we are currently typing a tag
     if (selection.baseOffset >= 0) {
       final textBeforeCursor = text.substring(0, selection.baseOffset);
       final words = textBeforeCursor.split(' ');
       if (words.isNotEmpty && words.last.startsWith('#')) {
-        setState(() {
-          _categoryFilter = words.last.substring(1).toLowerCase();
-        });
+        setState(() => _categoryFilter = words.last.substring(1).toLowerCase());
       } else {
         if (_categoryFilter != null) setState(() => _categoryFilter = null);
       }
     }
-    setState(() {}); // Rebuild to show/hide send button
+    setState(() {});
   }
 
-  void _handleSend() {
+  void _handleSend(ChatTheme theme) {
     final text = _controller.text;
+    final result = TransactionParserService().parse(text);
 
-    // 1. Parsing Logic
-    // Extract Amount (find first number NOT inside a word, ideally)
-    // Simple regex for floating point numbers
-    final amountRegExp = RegExp(r'[0-9]+(\.[0-9]+)?');
-    final allNumbers = amountRegExp.allMatches(text);
-
-    // Heuristic: If multiple numbers, take the last one? Or first?
-    // User: "Dinner 500 at KFC". Amount 500.
-    // User: "2 Burgers 500". Amount 500.
-    // Let's take the *last* number found as amount, assume quantity/street numbers come earlier.
-    final amountMatch = allNumbers.isNotEmpty ? allNumbers.last : null;
-
-    // Extract Category (find first word starting with #)
-    final categoryRegExp = RegExp(r'#(\w+)');
-    final categoryMatch = categoryRegExp.firstMatch(text);
-
-    if (amountMatch == null || categoryMatch == null) {
-      // Validation Failed: Shake and Show Error
+    if (!result.isValid) {
+      HapticFeedback.heavyImpact();
       _shakeController.forward();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
             "Please enter Amount (e.g. 500) and Category (e.g. #food)",
           ),
-          backgroundColor: AppTheme.dangerRed,
+          backgroundColor: theme.outgoingAccent,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.only(left: 16, right: 16, bottom: 88),
           shape: RoundedRectangleBorder(
@@ -119,30 +100,15 @@ class _SmartInputFieldState extends State<SmartInputField>
       return;
     }
 
-    final amount = double.parse(amountMatch.group(0)!);
-    final category = categoryMatch.group(1)!;
-
-    // Remove amount matching string and category matching string to get Note
-    // Caution: removing "500" might remove it from "500 Main St".
-    // Better to remove based on indices?
-    // For simplicity, let's remove the *matched instances*.
-
-    String note = text;
-    // Remove category
-    note = note.replaceFirst(categoryMatch.group(0)!, '');
-    // Remove amount (using the match index to be safe, but replaceFirst is okay if we assume uniqueness or just remove first occurrence of that amount string)
-    // Actually using match range is safer.
-    note = note.replaceRange(amountMatch.start, amountMatch.end, '');
-
-    note = note.trim();
-    // Clean up extra spaces
-    note = note.replaceAll(RegExp(r'\s+'), ' ');
-
-    widget.onSend(note, amount, category, _selectedType);
+    HapticFeedback.mediumImpact();
+    widget.onSend(
+      result.notes ?? '',
+      result.amount!,
+      result.category!,
+      _selectedType,
+    );
     _controller.clear();
-    setState(() {
-      _categoryFilter = null;
-    });
+    setState(() => _categoryFilter = null);
   }
 
   void _insertTag(String tag) {
@@ -150,8 +116,6 @@ class _SmartInputFieldState extends State<SmartInputField>
     final selection = _controller.selection;
     final textBeforeCursor = text.substring(0, selection.baseOffset);
     final words = textBeforeCursor.split(' ');
-
-    // Replace the last partial tag with the full tag
     words.removeLast();
     final newText = "${words.join(' ')} #$tag ";
 
@@ -164,18 +128,18 @@ class _SmartInputFieldState extends State<SmartInputField>
 
   @override
   Widget build(BuildContext context) {
-    // Get suggestions dynamically
+    final theme = context.watch<ChatThemeProvider>().theme;
     final allCategories = BaseAppCommand.blocExpense.allCategories;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // --- 1. Autocomplete Suggestions ---
+        // Autocomplete suggestions
         if (_categoryFilter != null)
           Container(
             height: 50,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            color: AppTheme.scaffoldBackground,
+            color: theme.inputContainerBg,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: allCategories
@@ -187,17 +151,16 @@ class _SmartInputFieldState extends State<SmartInputField>
                   .map(
                     (c) => Padding(
                       padding: const EdgeInsets.only(
-                        right: 8.0,
+                        right: 8,
                         top: 8,
                         bottom: 8,
                       ),
                       child: ActionChip(
                         label: Text("#$c"),
-                        backgroundColor: AppTheme.primaryNavy.withValues(
-                          alpha: 0.1,
-                        ),
-                        labelStyle: const TextStyle(
-                          color: AppTheme.primaryNavy,
+                        backgroundColor: theme.outgoingBg,
+                        side: BorderSide(color: theme.outgoingBorder),
+                        labelStyle: TextStyle(
+                          color: theme.outgoingAccent,
                           fontWeight: FontWeight.bold,
                         ),
                         onPressed: () => _insertTag(c),
@@ -208,17 +171,14 @@ class _SmartInputFieldState extends State<SmartInputField>
             ),
           ),
 
-        // --- 2. Input bar container UI (from reference) ---
+        // Input bar
         AnimatedBuilder(
           animation: _shakeAnimation,
           builder: (context, child) {
             return Transform.translate(
               offset: Offset(
                 _shakeAnimation.value *
-                    double.parse(
-                      (1 - (2 * (_shakeController.value * 3).round() % 2))
-                          .toString(),
-                    ),
+                    (1 - (2 * (_shakeController.value * 3).round() % 2)),
                 0,
               ),
               child: child,
@@ -227,10 +187,10 @@ class _SmartInputFieldState extends State<SmartInputField>
           child: Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.inputContainerBg,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: theme.patternColor,
                   offset: const Offset(0, -4),
                   blurRadius: 16,
                 ),
@@ -244,29 +204,32 @@ class _SmartInputFieldState extends State<SmartInputField>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // --- Expanded type selector (from reference) ---
+                  // Expanded type selector
                   if (_isTypeSelectorExpanded)
                     Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: AppTheme.scaffoldBackground,
+                        color: theme.inputFieldBg,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _buildTypeOption(
+                            theme,
                             TransactionType.outgoing,
                             "Expense",
                             Icons.arrow_upward_rounded,
                           ),
                           _buildTypeOption(
+                            theme,
                             TransactionType.incoming,
                             "Income",
                             Icons.arrow_downward_rounded,
                           ),
                           _buildTypeOption(
+                            theme,
                             TransactionType.invested,
                             "Invest",
                             Icons.trending_up_rounded,
@@ -278,28 +241,30 @@ class _SmartInputFieldState extends State<SmartInputField>
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // --- Collapsed type selector trigger (from reference) ---
+                      // Type selector trigger
                       GestureDetector(
-                        onTap: () => setState(() {
-                          _isTypeSelectorExpanded = !_isTypeSelectorExpanded;
-                        }),
+                        onTap: () => setState(
+                          () => _isTypeSelectorExpanded =
+                              !_isTypeSelectorExpanded,
+                        ),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: _getTypeColor(
+                              theme,
                               _selectedType,
-                            ).withValues(alpha: 0.1),
+                            ).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: _isTypeSelectorExpanded
-                                  ? _getTypeColor(_selectedType)
+                                  ? _getTypeColor(theme, _selectedType)
                                   : Colors.transparent,
                             ),
                           ),
                           child: Icon(
                             _getTypeIcon(_selectedType),
-                            color: _getTypeColor(_selectedType),
+                            color: _getTypeColor(theme, _selectedType),
                             size: 22,
                           ),
                         ),
@@ -307,65 +272,74 @@ class _SmartInputFieldState extends State<SmartInputField>
 
                       const SizedBox(width: 12),
 
-                      // --- Text field (same behavior, reference styling) ---
+                      // Text field
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.scaffoldBackground,
-                            borderRadius: BorderRadius.circular(14),
+                        child: TextField(
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          minLines: 1,
+                          maxLines: 4,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: theme.primaryText,
                           ),
-                          child: TextField(
-                            controller: _controller,
-                            focusNode: _focusNode,
-                            minLines: 1,
-                            maxLines: 4,
-                            textCapitalization: TextCapitalization.sentences,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: AppTheme.textPrimary,
+                          decoration: InputDecoration(
+                            hintText: "Lunch #food 150...",
+                            hintStyle: TextStyle(color: theme.secondaryText),
+                            filled: true,
+                            fillColor: theme.inputFieldBg,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
                             ),
-                            decoration: InputDecoration(
-                              hintText: "Lunch #food 150...",
-                              hintStyle: TextStyle(
-                                color: AppTheme.textSecondary.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
-                              isDense: true,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
                             ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: theme.inputBorder,
+                                width: 1.5,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            isDense: true,
                           ),
                         ),
                       ),
 
                       const SizedBox(width: 8),
 
-                      // --- Send button (keep your conditional visibility) ---
+                      // Send button
                       if (_controller.text.trim().isNotEmpty)
                         GestureDetector(
-                          onTap: _handleSend,
+                          onTap: () => _handleSend(theme),
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryNavy,
+                              color: _getTypeColor(theme, _selectedType),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryNavy.withValues(
-                                    alpha: 0.3,
-                                  ),
+                                  color: _getTypeColor(
+                                    theme,
+                                    _selectedType,
+                                  ).withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.arrow_upward_rounded,
-                              color: Colors.white,
+                              color: theme.id == 'midnight'
+                                  ? Colors.black
+                                  : Colors.white,
                               size: 20,
                             ),
                           ),
@@ -381,11 +355,14 @@ class _SmartInputFieldState extends State<SmartInputField>
     );
   }
 
-  // --- Type selector helpers (from reference) ---
-
-  Widget _buildTypeOption(TransactionType type, String label, IconData icon) {
+  Widget _buildTypeOption(
+    ChatTheme theme,
+    TransactionType type,
+    String label,
+    IconData icon,
+  ) {
     final isSelected = _selectedType == type;
-    final color = _getTypeColor(type);
+    final color = _getTypeColor(theme, type);
 
     return GestureDetector(
       onTap: () {
@@ -397,12 +374,12 @@ class _SmartInputFieldState extends State<SmartInputField>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected ? theme.inputContainerBg : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: theme.patternColor,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -416,9 +393,7 @@ class _SmartInputFieldState extends State<SmartInputField>
             Text(
               label,
               style: TextStyle(
-                color: isSelected
-                    ? AppTheme.textPrimary
-                    : AppTheme.textSecondary,
+                color: isSelected ? theme.primaryText : theme.secondaryText,
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
@@ -429,14 +404,14 @@ class _SmartInputFieldState extends State<SmartInputField>
     );
   }
 
-  Color _getTypeColor(TransactionType type) {
+  Color _getTypeColor(ChatTheme theme, TransactionType type) {
     switch (type) {
       case TransactionType.outgoing:
-        return AppTheme.dangerRed;
+        return theme.outgoingAccent;
       case TransactionType.incoming:
-        return AppTheme.primaryGreen;
+        return theme.incomingAccent;
       case TransactionType.invested:
-        return AppTheme.accentPurple;
+        return theme.investedAccent;
     }
   }
 

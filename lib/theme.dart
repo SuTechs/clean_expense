@@ -11,6 +11,12 @@ class AppTheme {
   // Used for headings, active tabs
   static const Color primaryNavy = Color(0xFF2D3250);
 
+  // Primary Navy Shades
+  static const Color primaryNavyDark = Color(0xFF1F2340);
+  static const Color primaryNavyLight = Color(0xFF4A4F6F);
+  static const Color primaryNavy50 = Color(0xFFE8E9ED);
+  static const Color primaryNavy100 = Color(0xFFD1D3DC);
+
   // The specific "Finance Success" green
   static const Color primaryGreen = Color(0xFF2ECC71);
 
@@ -47,6 +53,17 @@ class AppTheme {
     colors: [
       Color(0xFF2ECC71), // Green
       Color(0x002ECC71), // Transparent Green
+    ],
+  );
+
+  // Chat Background Gradient (navy-themed)
+  static const LinearGradient chatBackgroundGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFF0F4F8), // Light blue-gray
+      Color(0xFFE8EDF4), // Slightly darker
+      Color(0xFFF5F7FA), // Very light
     ],
   );
 
