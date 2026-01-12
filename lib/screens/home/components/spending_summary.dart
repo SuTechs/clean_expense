@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../data/bloc/app_bloc.dart';
 import '../../../data/bloc/expense_bloc.dart';
+import '../../../data/utils/string_utils.dart';
 import '../../../theme.dart';
 
 class SpendingSummary extends StatelessWidget {
@@ -213,7 +214,7 @@ class SpendingSummary extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        label,
+                        StringUtils.titleCase(label),
                         style: const TextStyle(
                           color: AppTheme.primaryNavy,
                           fontWeight: FontWeight.w600,

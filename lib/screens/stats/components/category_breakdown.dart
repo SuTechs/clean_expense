@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../theme.dart';
 import '../../../data/utils/statistics_helper.dart';
+import '../../../data/utils/string_utils.dart';
 
 class CategoryBreakdown extends StatefulWidget {
   final List<CategoryStat> categoryStats;
@@ -187,7 +188,7 @@ class _CategoryBreakdownState extends State<CategoryBreakdown> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      stat.category,
+                      StringUtils.titleCase(stat.category),
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w600,
                         color: AppTheme.primaryNavy,

@@ -8,7 +8,8 @@ A beautiful, chat-based expense manager app built with Flutter.
 - **Smart Chat Interface**: Add expenses naturally like `#Food 200` or `Cab 500`.
 - **Clean Dashboard**: Visualize your Balance, Incoming, Outgoing, and Investments.
 - **Detailed Stats**: Breakdown of spending by category using interactive charts.
-- **Privacy First**: Local storage using Hive.
+- **Offline First**: Fast and private with local storage using Hive.
+- **Dark Mode**: Beautiful midnight theme support.
 
 ## Demo
 [Watch the Demo on YouTube](https://youtube.com/your-video-link)
