@@ -21,7 +21,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-3',
     amount: 800,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 3),
     type: TransactionType.outgoing,
     note: 'Lunch with friends',
@@ -45,7 +45,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-6',
     amount: 500,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 6),
     type: TransactionType.outgoing,
     note: 'Coffee',
@@ -85,7 +85,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-11',
     amount: 600,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 11),
     type: TransactionType.outgoing,
     note: 'Dinner',
@@ -125,7 +125,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-16',
     amount: 300,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 16),
     type: TransactionType.outgoing,
     note: 'Snacks',
@@ -165,7 +165,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-21',
     amount: 200,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 21),
     type: TransactionType.outgoing,
     note: 'Tea',
@@ -189,7 +189,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-24',
     amount: 1000,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 24),
     type: TransactionType.outgoing,
     note: 'Brunch',
@@ -213,7 +213,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-27',
     amount: 150,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 27),
     type: TransactionType.outgoing,
     note: 'Soda',
@@ -245,7 +245,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-31',
     amount: 1200,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 31),
     type: TransactionType.outgoing,
     note: 'Celebration',
@@ -269,7 +269,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-34',
     amount: 450,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 13),
     type: TransactionType.outgoing,
     note: 'Sandwich',
@@ -301,7 +301,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-38',
     amount: 600,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 17),
     type: TransactionType.outgoing,
     note: 'Pizza',
@@ -333,7 +333,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-42',
     amount: 350,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 21),
     type: TransactionType.outgoing,
     note: 'Juice',
@@ -365,7 +365,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-46',
     amount: 500,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 25),
     type: TransactionType.outgoing,
     note: 'Dessert',
@@ -397,7 +397,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'jan-50',
     amount: 1000,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2026, 1, 30),
     type: TransactionType.outgoing,
     note: 'Bakery',
@@ -431,7 +431,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-4',
     amount: 3000,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 31),
     type: TransactionType.outgoing,
     note: 'New Year Dinner',
@@ -471,7 +471,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-9',
     amount: 600,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 6),
     type: TransactionType.outgoing,
     note: 'Lunch',
@@ -503,7 +503,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-13',
     amount: 300,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 10),
     type: TransactionType.outgoing,
     note: 'Snacks',
@@ -543,7 +543,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-18',
     amount: 450,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 13),
     type: TransactionType.outgoing,
     note: 'Burger',
@@ -575,7 +575,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-22',
     amount: 250,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 21),
     type: TransactionType.outgoing,
     note: 'Tea',
@@ -623,7 +623,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-28',
     amount: 200,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 27),
     type: TransactionType.outgoing,
     note: 'Coffee',
@@ -655,7 +655,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-32',
     amount: 1500,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 31),
     type: TransactionType.outgoing,
     note: 'Party snacks',
@@ -679,7 +679,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-35',
     amount: 500,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 12),
     type: TransactionType.outgoing,
     note: 'Lunch box',
@@ -711,7 +711,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-39',
     amount: 600,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 16),
     type: TransactionType.outgoing,
     note: 'Pizza',
@@ -743,7 +743,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-43',
     amount: 300,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 20),
     type: TransactionType.outgoing,
     note: 'Juice',
@@ -775,7 +775,7 @@ final kDummyExpenseData = <ExpenseData>[
   ExpenseData(
     id: 'dec-47',
     amount: 600,
-    category: 'Food & Drinks',
+    category: 'Food',
     date: DateTime(2025, 12, 24),
     type: TransactionType.outgoing,
     note: 'Christmas Eve treats',

@@ -18,6 +18,37 @@ import 'theme/chat_theme_provider.dart';
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
+  /// Navigate to ChatScreen with slide-up + fade animation
+  static void animateGo(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const ChatScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 0.15);
+          const end = Offset.zero;
+          final slideTween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: Curves.easeOutCubic));
+          final fadeTween = Tween<double>(
+            begin: 0.0,
+            end: 1.0,
+          ).chain(CurveTween(curve: Curves.easeOut));
+          return SlideTransition(
+            position: animation.drive(slideTween),
+            child: FadeTransition(
+              opacity: animation.drive(fadeTween),
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+      ),
+    );
+  }
+
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }

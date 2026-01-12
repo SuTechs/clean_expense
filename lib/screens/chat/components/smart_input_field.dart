@@ -129,7 +129,6 @@ class _SmartInputFieldState extends State<SmartInputField>
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ChatThemeProvider>().theme;
-    // Get type-specific category suggestions
     final suggestions = BaseAppCommand.blocExpense.getSuggestionsForType(
       _selectedType,
     );
@@ -174,182 +173,195 @@ class _SmartInputFieldState extends State<SmartInputField>
             ),
           ),
 
-        // Input bar
-        AnimatedBuilder(
-          animation: _shakeAnimation,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(
-                _shakeAnimation.value *
-                    (1 - (2 * (_shakeController.value * 3).round() % 2)),
-                0,
-              ),
-              child: child,
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            decoration: BoxDecoration(
-              color: theme.inputContainerBg,
-              boxShadow: [
-                BoxShadow(
-                  color: theme.patternColor,
-                  offset: const Offset(0, -4),
-                  blurRadius: 16,
+        // Input bar with Hero for FAB transition
+        Hero(
+          tag: 'chat_input_hero',
+          child: Material(
+            type: MaterialType.transparency,
+            child: AnimatedBuilder(
+              animation: _shakeAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(
+                    _shakeAnimation.value *
+                        (1 - (2 * (_shakeController.value * 3).round() % 2)),
+                    0,
+                  ),
+                  child: child,
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  12,
+                  16,
+                  MediaQuery.of(context).padding.bottom + 24,
                 ),
-              ],
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Expanded type selector
-                  if (_isTypeSelectorExpanded)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: theme.inputFieldBg,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildTypeOption(
-                            theme,
-                            TransactionType.outgoing,
-                            "Expense",
-                            Icons.arrow_upward_rounded,
-                          ),
-                          _buildTypeOption(
-                            theme,
-                            TransactionType.incoming,
-                            "Income",
-                            Icons.arrow_downward_rounded,
-                          ),
-                          _buildTypeOption(
-                            theme,
-                            TransactionType.invested,
-                            "Invest",
-                            Icons.trending_up_rounded,
-                          ),
-                        ],
-                      ),
+                decoration: BoxDecoration(
+                  color: theme.inputContainerBg,
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.patternColor,
+                      offset: const Offset(0, -4),
+                      blurRadius: 16,
                     ),
-
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  ],
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Type selector trigger
-                      GestureDetector(
-                        onTap: () => setState(
-                          () => _isTypeSelectorExpanded =
-                              !_isTypeSelectorExpanded,
-                        ),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(10),
+                      // Expanded type selector
+                      if (_isTypeSelectorExpanded)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: _getTypeColor(
-                              theme,
-                              _selectedType,
-                            ).withValues(alpha: 0.15),
+                            color: theme.inputFieldBg,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _isTypeSelectorExpanded
-                                  ? _getTypeColor(theme, _selectedType)
-                                  : Colors.transparent,
-                            ),
                           ),
-                          child: Icon(
-                            _getTypeIcon(_selectedType),
-                            color: _getTypeColor(theme, _selectedType),
-                            size: 22,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildTypeOption(
+                                theme,
+                                TransactionType.outgoing,
+                                "Expense",
+                                Icons.arrow_upward_rounded,
+                              ),
+                              _buildTypeOption(
+                                theme,
+                                TransactionType.incoming,
+                                "Income",
+                                Icons.arrow_downward_rounded,
+                              ),
+                              _buildTypeOption(
+                                theme,
+                                TransactionType.invested,
+                                "Invest",
+                                Icons.trending_up_rounded,
+                              ),
+                            ],
                           ),
                         ),
-                      ),
 
-                      const SizedBox(width: 12),
-
-                      // Text field
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          focusNode: _focusNode,
-                          minLines: 1,
-                          maxLines: 4,
-                          textCapitalization: TextCapitalization.sentences,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: theme.primaryText,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: "Lunch #food 150...",
-                            hintStyle: TextStyle(color: theme.secondaryText),
-                            filled: true,
-                            fillColor: theme.inputFieldBg,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Type selector trigger
+                          GestureDetector(
+                            onTap: () => setState(
+                              () => _isTypeSelectorExpanded =
+                                  !_isTypeSelectorExpanded,
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(
-                                color: theme.inputBorder,
-                                width: 1.5,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: _getTypeColor(
+                                  theme,
+                                  _selectedType,
+                                ).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _isTypeSelectorExpanded
+                                      ? _getTypeColor(theme, _selectedType)
+                                      : Colors.transparent,
+                                ),
+                              ),
+                              child: Icon(
+                                _getTypeIcon(_selectedType),
+                                color: _getTypeColor(theme, _selectedType),
+                                size: 22,
                               ),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            isDense: true,
                           ),
-                        ),
-                      ),
 
-                      const SizedBox(width: 8),
+                          const SizedBox(width: 12),
 
-                      // Send button
-                      if (_controller.text.trim().isNotEmpty)
-                        GestureDetector(
-                          onTap: () => _handleSend(theme),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: _getTypeColor(theme, _selectedType),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _getTypeColor(
-                                    theme,
-                                    _selectedType,
-                                  ).withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
+                          // Text field
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              focusNode: _focusNode,
+                              minLines: 1,
+                              maxLines: 4,
+                              textCapitalization: TextCapitalization.sentences,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: theme.primaryText,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: "Lunch #food 150...",
+                                hintStyle: TextStyle(
+                                  color: theme.secondaryText,
                                 ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.arrow_upward_rounded,
-                              color: theme.id == 'midnight'
-                                  ? Colors.black
-                                  : Colors.white,
-                              size: 20,
+                                filled: true,
+                                fillColor: theme.inputFieldBg,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(
+                                    color: theme.inputBorder,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                isDense: true,
+                              ),
                             ),
                           ),
-                        ),
+
+                          const SizedBox(width: 8),
+
+                          // Send button
+                          if (_controller.text.trim().isNotEmpty)
+                            GestureDetector(
+                              onTap: () => _handleSend(theme),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: _getTypeColor(theme, _selectedType),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: _getTypeColor(
+                                        theme,
+                                        _selectedType,
+                                      ).withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.arrow_upward_rounded,
+                                  color: theme.id == 'midnight'
+                                      ? Colors.black
+                                      : Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
