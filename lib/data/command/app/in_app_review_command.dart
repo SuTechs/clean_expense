@@ -28,7 +28,7 @@ class InAppReviewCommand extends BaseAppCommand {
 
   void openStore() {
     final InAppReview inAppReview = InAppReview.instance;
-    inAppReview.openStoreListing();
+    inAppReview.openStoreListing(appStoreId: '6757723320');
     // hive.updateReviewStatus();
   }
 }
