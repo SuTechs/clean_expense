@@ -32,9 +32,9 @@ We have exciting features planned for the future:
 - [ ] **Edit/Delete Expenses**: Manage your records more effectively.
 - [ ] **Export Data**: Export to PDF, CSV, and Excel.
 - [ ] **AI Integration**:
-  - Ask AI: "Where am I spending the most?"
-  - Multi-Expense Entry: Add multiple expenses in one go.
-  - Dynamic Stats UI: AI-powered insights.
+  - [ ] Ask AI: "Where am I spending the most?"
+  - [ ] Multi-Expense Entry: Add multiple expenses in one go.
+  - [ ] Dynamic Stats UI: AI-powered insights.
 - [ ] **UPI Scanner**: Scan QR, select app, and auto-log expense.
 - [ ] **Custom Themes**: Create and share your own chat themes.
 - [ ] **Darker Logo**: A sleek new look.
