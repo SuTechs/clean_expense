@@ -12,11 +12,12 @@ A beautiful, chat-based expense manager app built with Flutter.
 - **Dark Mode**: Beautiful midnight theme support.
 
 ## Demo
-[Watch the Demo on YouTube](https://youtube.com/your-video-link)
+[Watch the Demo on YouTube](https://youtu.be/KUim8kCIA4I)
 
 ## Download
-- [App Store](https://apps.apple.com/app-link)
-- [Play Store](https://play.google.com/store/apps/details?id=com.sutechs.expense)
+- 🔗 [Official Website](https://sutechs.com/clean-expense)
+- 🍎 [App Store](https://apps.apple.com/us/app/clean-expense-track-monney/id6757723320)
+- 🤖 [Play Store](https://play.google.com/store/apps/details?id=com.sutechs.expense)
 
 ## Getting Started
 

@@ -43,7 +43,7 @@ abstract class BaseAppCommand {
     // Init services
 
     // Fetch and sync expenses
-    ExpenseCommand().refresh(loadDummy: true);
+    ExpenseCommand().refresh(loadDummy: false);
 
     blocApp.hasBootstrapped = true;
     log("BootstrapCommand - Complete");
