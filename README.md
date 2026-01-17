@@ -12,7 +12,7 @@ A beautiful, chat-based expense manager app built with Flutter.
 - **Dark Mode**: Beautiful midnight theme support.
 
 ## Demo
-[Watch the Demo on YouTube](https://youtu.be/KUim8kCIA4I)
+[Watch how I made it on YouTube](https://youtu.be/KUim8kCIA4I)
 
 ## Download
 - 🔗 [Official Website](https://sutechs.com/clean-expense)
