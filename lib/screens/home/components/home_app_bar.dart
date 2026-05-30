@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../data/bloc/app_bloc.dart';
 import '../../settings/settings_screen.dart';
 import '../../transactions/transactions_screen.dart';
+import '../../upi/upi_scan_screen.dart';
 
 import '../../../theme.dart';
 
@@ -66,6 +67,16 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        // Scan UPI QR & Pay Button
+        IconButton(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const UpiScanScreen()),
+          ),
+          icon: const Icon(Icons.qr_code_scanner_rounded),
+          color: AppTheme.primaryNavy,
+        ),
+
         // Transaction Button
         IconButton(
           onPressed: () => Navigator.push(
