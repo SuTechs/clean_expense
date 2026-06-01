@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/command/commands.dart';
@@ -9,6 +8,7 @@ import '../../data/data/expense/expense.dart';
 import '../../data/utils/upi_uri.dart';
 import '../../theme.dart';
 import 'components/category_picker_sheet.dart';
+import 'components/payment_widgets.dart';
 import 'components/upi_app_picker_sheet.dart';
 
 /// Collects the amount, category and an optional note for a scanned UPI QR,
@@ -135,218 +135,30 @@ class _UpiPaymentScreenState extends State<UpiPaymentScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
                 child: Column(
                   children: [
-                    _payeeHeader(),
+                    PayeeHeader(
+                      name: widget.qr.name ?? 'UPI Payment',
+                      vpa: widget.qr.vpa,
+                    ),
                     const SizedBox(height: 40),
-                    _amountField(),
+                    AmountField(
+                      controller: _amountController,
+                      autofocus: widget.qr.amount == null,
+                    ),
                     const SizedBox(height: 16),
-                    _noteChip(),
+                    NoteField(controller: _noteController),
                     const SizedBox(height: 40),
-                    _categorySection(),
+                    CategorySection(
+                      selected: _category,
+                      quickPicks: _quickPicks,
+                      onSelected: (c) => setState(() => _category = c),
+                      onMore: _openCategoryPicker,
+                    ),
                   ],
                 ),
               ),
             ),
-            _payBar(),
+            PayBar(onPressed: _selectApp),
           ],
-        ),
-      ),
-    );
-  }
-
-  // --- Payee (name + id) ------------------------------------------------------
-
-  Widget _payeeHeader() {
-    final name = widget.qr.name ?? 'UPI Payment';
-    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 32,
-          backgroundColor: AppTheme.primaryNavy,
-          child: Text(
-            initial,
-            style: const TextStyle(
-              color: AppTheme.textWhite,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          name,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.outfit(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.primaryNavy,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          widget.qr.vpa,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-        ),
-      ],
-    );
-  }
-
-  // --- Amount (hero) ----------------------------------------------------------
-
-  Widget _amountField() {
-    return IntrinsicWidth(
-      child: TextField(
-        controller: _amountController,
-        autofocus: widget.qr.amount == null,
-        textAlign: TextAlign.center,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-        ],
-        style: GoogleFonts.outfit(
-          fontSize: 48,
-          fontWeight: FontWeight.bold,
-          color: AppTheme.textPrimary,
-        ),
-        decoration: InputDecoration(
-          isCollapsed: true,
-          filled: false,
-          prefixText: '₹ ',
-          prefixStyle: GoogleFonts.outfit(
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
-          ),
-          hintText: '0',
-          hintStyle: GoogleFonts.outfit(
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textSecondary.withValues(alpha: 0.4),
-          ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-        ),
-      ),
-    );
-  }
-
-  // --- Note (compact chip) ----------------------------------------------------
-
-  Widget _noteChip() {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 260),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.inputFill,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: TextField(
-        controller: _noteController,
-        textAlign: TextAlign.center,
-        textCapitalization: TextCapitalization.sentences,
-        style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
-        decoration: const InputDecoration(
-          isCollapsed: true,
-          filled: false,
-          hintText: 'Add a note',
-          hintStyle: TextStyle(color: AppTheme.textSecondary),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-        ),
-      ),
-    );
-  }
-
-  // --- Category (quick picks + "more" sheet) ---------------------------------
-
-  Widget _categorySection() {
-    // Show the selected category as a chip even if it isn't a quick pick.
-    final picks = <String>[
-      if (_category != null && !_quickPicks.contains(_category)) _category!,
-      ..._quickPicks,
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Category',
-          style: GoogleFonts.outfit(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final c in picks) _categoryChip(c),
-            _moreChip(),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _categoryChip(String c) {
-    final selected = c == _category;
-    return ChoiceChip(
-      label: Text(c),
-      selected: selected,
-      onSelected: (_) => setState(() => _category = c),
-      showCheckmark: false,
-      backgroundColor: AppTheme.inputFill,
-      selectedColor: AppTheme.primaryNavy,
-      labelStyle: TextStyle(
-        color: selected ? AppTheme.textWhite : AppTheme.tagText,
-        fontWeight: FontWeight.w500,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide.none,
-      ),
-    );
-  }
-
-  Widget _moreChip() {
-    return ActionChip(
-      avatar: const Icon(Icons.tune_rounded, size: 18, color: AppTheme.primaryNavy),
-      label: const Text('More'),
-      onPressed: _openCategoryPicker,
-      backgroundColor: AppTheme.cardBackground,
-      labelStyle: const TextStyle(
-        color: AppTheme.primaryNavy,
-        fontWeight: FontWeight.w600,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: AppTheme.dividerColor),
-      ),
-    );
-  }
-
-  // --- Pay bar ----------------------------------------------------------------
-
-  Widget _payBar() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: const BoxDecoration(
-        color: AppTheme.cardBackground,
-        boxShadow: [
-          BoxShadow(color: Color(0x0F000000), blurRadius: 16, offset: Offset(0, -4)),
-        ],
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: _selectApp,
-          icon: const Icon(Icons.account_balance_wallet_rounded),
-          label: const Text('Select app to pay'),
         ),
       ),
     );

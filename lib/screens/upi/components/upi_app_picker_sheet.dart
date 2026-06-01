@@ -138,7 +138,14 @@ class _UpiAppPickerSheetState extends State<UpiAppPickerSheet> {
                   crossAxisCount: 4,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 12,
-                  children: apps.map(_appTile).toList(),
+                  children: [
+                    for (final app in apps)
+                      _AppTile(
+                        app: app,
+                        enabled: !_launching,
+                        onTap: () => _pay(app),
+                      ),
+                  ],
                 );
               },
             ),
@@ -148,28 +155,43 @@ class _UpiAppPickerSheetState extends State<UpiAppPickerSheet> {
     );
   }
 
-  Widget _appTile(ApplicationMeta app) {
+}
+
+/// A single tappable UPI app (icon + name) in the picker grid.
+class _AppTile extends StatelessWidget {
+  final ApplicationMeta app;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _AppTile({
+    required this.app,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return InkWell(
-      onTap: _launching ? null : () => _pay(app),
+      onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(12),
       child: Opacity(
-        opacity: _launching ? 0.4 : 1,
+        opacity: enabled ? 1 : 0.4,
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          app.iconImage(44),
-          const SizedBox(height: 6),
-          Text(
-            app.upiApplication.getAppName(),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppTheme.textSecondary,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            app.iconImage(44),
+            const SizedBox(height: 6),
+            Text(
+              app.upiApplication.getAppName(),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../data/command/commands.dart';
 import '../../../data/data/expense/expense.dart';
 import '../../../theme.dart';
+import 'category_chip.dart';
 
 /// Bottom sheet for picking an expense category.
 ///
@@ -127,21 +128,35 @@ class _CategoryPickerSheetState extends State<CategoryPickerSheet> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                   children: [
                     if (_query.isEmpty && mostUsed.isNotEmpty) ...[
-                      _sectionLabel('Most used'),
+                      const _SectionLabel('Most used'),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: mostUsed.map(_chip).toList(),
+                        children: [
+                          for (final c in mostUsed)
+                            CategoryChip(
+                              label: c,
+                              selected: c == widget.selected,
+                              onTap: () => _pick(c),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 20),
-                      _sectionLabel('All categories'),
+                      const _SectionLabel('All categories'),
                       const SizedBox(height: 8),
                     ],
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: filtered.map(_chip).toList(),
+                      children: [
+                        for (final c in filtered)
+                          CategoryChip(
+                            label: c,
+                            selected: c == widget.selected,
+                            onTap: () => _pick(c),
+                          ),
+                      ],
                     ),
                     if (filtered.isEmpty)
                       const Padding(
@@ -161,31 +176,21 @@ class _CategoryPickerSheetState extends State<CategoryPickerSheet> {
     );
   }
 
-  Widget _sectionLabel(String text) => Text(
-        text,
-        style: GoogleFonts.outfit(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.textSecondary,
-        ),
-      );
+}
 
-  Widget _chip(String c) {
-    final selected = c == widget.selected;
-    return ChoiceChip(
-      label: Text(c),
-      selected: selected,
-      onSelected: (_) => _pick(c),
-      showCheckmark: false,
-      backgroundColor: AppTheme.inputFill,
-      selectedColor: AppTheme.primaryNavy,
-      labelStyle: TextStyle(
-        color: selected ? AppTheme.textWhite : AppTheme.tagText,
-        fontWeight: FontWeight.w500,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide.none,
+/// Small muted section heading used inside the category sheet.
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: GoogleFonts.outfit(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppTheme.textSecondary,
       ),
     );
   }
