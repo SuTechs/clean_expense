@@ -109,12 +109,14 @@ class _UpiScanScreenState extends State<UpiScanScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Full-bleed camera preview.
+          // Full-bleed camera preview. NOTE: no `scanWindow` — restricting
+          // detection to the cutout rect breaks scanning on some devices
+          // (coordinate-space mismatch with BoxFit.cover). The cutout below is
+          // purely a visual guide; detection runs on the full frame.
           MobileScanner(
             controller: _controller,
             onDetect: _onDetect,
             fit: BoxFit.cover,
-            scanWindow: scanRect,
             errorBuilder: (context, error) => _CameraError(error: error),
           ),
 
