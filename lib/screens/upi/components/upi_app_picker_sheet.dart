@@ -16,12 +16,18 @@ class UpiAppPickerSheet extends StatefulWidget {
   final double amount;
   final String transactionNote;
 
+  /// Invoked the moment a UPI app is tapped, BEFORE launching it. This is where
+  /// the caller persists the expense — so nothing is saved unless the user
+  /// actually commits to paying. If it throws, the launch is aborted.
+  final Future<void> Function() onBeforeLaunch;
+
   const UpiAppPickerSheet({
     super.key,
     required this.vpa,
     required this.payeeName,
     required this.amount,
     required this.transactionNote,
+    required this.onBeforeLaunch,
   });
 
   @override
@@ -35,7 +41,30 @@ class _UpiAppPickerSheetState extends State<UpiAppPickerSheet> {
   late final Future<List<ApplicationMeta>> _apps =
       _upiPay.getInstalledUpiApplications();
 
+  bool _launching = false;
+
   Future<void> _pay(ApplicationMeta app) async {
+    if (_launching) return;
+    setState(() => _launching = true);
+
+    // 1. Persist the expense first (only now that an app was chosen).
+    try {
+      await widget.onBeforeLaunch();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _launching = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save expense: $e'),
+            backgroundColor: AppTheme.dangerRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    // 2. Hand off to the external app to complete the payment.
     try {
       await _upiPay.initiateTransaction(
         app: app.upiApplication,
@@ -46,10 +75,10 @@ class _UpiAppPickerSheetState extends State<UpiAppPickerSheet> {
         transactionNote: widget.transactionNote,
       );
     } catch (_) {
-      // The payment lives in the external app; we're only tracking. If the
-      // launch fails we silently close — the expense is already saved.
+      // The payment lives in the external app; we only track. The expense is
+      // already saved, so close and report success regardless of launch result.
     }
-    if (mounted) Navigator.of(context).pop();
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   @override
@@ -96,8 +125,8 @@ class _UpiAppPickerSheetState extends State<UpiAppPickerSheet> {
                   return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: Text(
-                      'No UPI apps found on this device. Your expense has '
-                      'been saved.',
+                      'No UPI apps found on this device. Install a UPI app '
+                      '(e.g. GPay, PhonePe) to pay.',
                       style: TextStyle(color: AppTheme.textSecondary),
                     ),
                   );
@@ -121,9 +150,11 @@ class _UpiAppPickerSheetState extends State<UpiAppPickerSheet> {
 
   Widget _appTile(ApplicationMeta app) {
     return InkWell(
-      onTap: () => _pay(app),
+      onTap: _launching ? null : () => _pay(app),
       borderRadius: BorderRadius.circular(12),
-      child: Column(
+      child: Opacity(
+        opacity: _launching ? 0.4 : 1,
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           app.iconImage(44),
@@ -139,6 +170,7 @@ class _UpiAppPickerSheetState extends State<UpiAppPickerSheet> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

@@ -61,53 +61,81 @@ class _UpiScanScreenState extends State<UpiScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final cutout = size.width * 0.7;
+    final scanRect = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height * 0.42),
+      width: cutout,
+      height: cutout,
+    );
+
     return Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Scan UPI QR'),
+        leading: IconButton(
+          tooltip: 'Close',
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: const Text('Scan & Pay'),
         actions: [
-          IconButton(
-            tooltip: 'Toggle flash',
-            icon: const Icon(Icons.flash_on),
-            onPressed: () => _controller.toggleTorch(),
+          ValueListenableBuilder<MobileScannerState>(
+            valueListenable: _controller,
+            builder: (context, state, _) {
+              final on = state.torchState == TorchState.on;
+              final available = state.torchState != TorchState.unavailable;
+              return IconButton(
+                tooltip: 'Flash',
+                icon: Icon(on ? Icons.flash_on_rounded : Icons.flash_off_rounded),
+                color: on ? AppTheme.primaryGreen : Colors.white,
+                onPressed: available ? () => _controller.toggleTorch() : null,
+              );
+            },
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Stack(
-        alignment: Alignment.center,
+        fit: StackFit.expand,
         children: [
+          // Full-bleed camera preview.
           MobileScanner(
             controller: _controller,
             onDetect: _onDetect,
+            fit: BoxFit.cover,
+            scanWindow: scanRect,
             errorBuilder: (context, error) => _CameraError(error: error),
           ),
 
-          // Scan window overlay.
-          Container(
-            width: 240,
-            height: 240,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white, width: 3),
-              borderRadius: BorderRadius.circular(20),
+          // Dimmed overlay with a clear, rounded cutout in the center.
+          IgnorePointer(
+            child: CustomPaint(
+              size: Size.infinite,
+              painter: _ScannerOverlayPainter(
+                cutout: scanRect,
+                radius: 24,
+                borderColor: _hint != null ? AppTheme.dangerRed : Colors.white,
+              ),
             ),
           ),
 
-          // Hint / instruction text.
+          // Hint / instruction text below the cutout.
           Positioned(
-            bottom: 64,
+            top: scanRect.bottom + 28,
             left: 32,
             right: 32,
             child: Text(
-              _hint ?? 'Point your camera at a UPI QR code',
+              _hint ?? 'Align the UPI QR code within the frame',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: _hint != null ? AppTheme.dangerRed : Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                shadows: const [Shadow(color: Colors.black54, blurRadius: 8)],
+                shadows: const [Shadow(color: Colors.black87, blurRadius: 8)],
               ),
             ),
           ),
@@ -117,6 +145,72 @@ class _UpiScanScreenState extends State<UpiScanScreen> {
   }
 }
 
+/// Paints a translucent scrim over the whole screen, punches out a rounded
+/// square for the scan window, and draws white corner brackets around it.
+class _ScannerOverlayPainter extends CustomPainter {
+  final Rect cutout;
+  final double radius;
+  final Color borderColor;
+
+  _ScannerOverlayPainter({
+    required this.cutout,
+    required this.radius,
+    required this.borderColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(cutout, Radius.circular(radius));
+
+    // Scrim everywhere except the cutout.
+    final scrim = Path()
+      ..addRect(Offset.zero & size)
+      ..addRRect(rrect)
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(scrim, Paint()..color = Colors.black.withValues(alpha: 0.55));
+
+    // Thin frame border.
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = borderColor.withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+
+    // Corner brackets.
+    final bracket = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    const len = 28.0;
+    final r = radius;
+
+    void corner(Offset c, double dx, double dy) {
+      final path = Path()
+        ..moveTo(c.dx, c.dy + dy * (len))
+        ..lineTo(c.dx, c.dy + dy * r)
+        ..arcToPoint(
+          Offset(c.dx + dx * r, c.dy),
+          radius: Radius.circular(r),
+          clockwise: dx == dy,
+        )
+        ..lineTo(c.dx + dx * len, c.dy);
+      canvas.drawPath(path, bracket);
+    }
+
+    corner(cutout.topLeft, 1, 1);
+    corner(cutout.topRight, -1, 1);
+    corner(cutout.bottomLeft, 1, -1);
+    corner(cutout.bottomRight, -1, -1);
+  }
+
+  @override
+  bool shouldRepaint(_ScannerOverlayPainter old) =>
+      old.cutout != cutout || old.borderColor != borderColor;
+}
+
 /// Friendly fallback shown when the camera can't start (e.g. permission denied).
 class _CameraError extends StatelessWidget {
   final MobileScannerException error;
@@ -124,8 +218,7 @@ class _CameraError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final denied =
-        error.errorCode == MobileScannerErrorCode.permissionDenied;
+    final denied = error.errorCode == MobileScannerErrorCode.permissionDenied;
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
