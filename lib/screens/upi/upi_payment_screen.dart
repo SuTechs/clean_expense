@@ -242,30 +242,20 @@ class _UpiPaymentScreenState extends State<UpiPaymentScreen> {
         color: AppTheme.inputFill,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.edit_note_rounded,
-              size: 18, color: AppTheme.textSecondary),
-          const SizedBox(width: 6),
-          Flexible(
-            child: TextField(
-              controller: _noteController,
-              textAlign: TextAlign.center,
-              textCapitalization: TextCapitalization.sentences,
-              style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
-              decoration: const InputDecoration(
-                isCollapsed: true,
-                filled: false,
-                hintText: 'Add a note',
-                hintStyle: TextStyle(color: AppTheme.textSecondary),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-              ),
-            ),
-          ),
-        ],
+      child: TextField(
+        controller: _noteController,
+        textAlign: TextAlign.center,
+        textCapitalization: TextCapitalization.sentences,
+        style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+        decoration: const InputDecoration(
+          isCollapsed: true,
+          filled: false,
+          hintText: 'Add a note',
+          hintStyle: TextStyle(color: AppTheme.textSecondary),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+        ),
       ),
     );
   }
