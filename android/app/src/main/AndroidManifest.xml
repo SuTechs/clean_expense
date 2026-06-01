@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for scanning UPI QR codes with the device camera -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:label="Clean Expense"
         android:name="${applicationName}"
@@ -48,6 +51,11 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Required (Android 11+) so upi_pay can discover installed UPI apps -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="upi" android:host="pay" />
         </intent>
     </queries>
 </manifest>
