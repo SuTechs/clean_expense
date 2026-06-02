@@ -45,10 +45,23 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is needed to scan UPI QR codes for payments.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>
 		<string>mailto</string>
+		<!-- UPI apps, so upi_pay can detect and launch them -->
+		<string>upi</string>
+		<string>tez</string>
+		<string>gpay</string>
+		<string>phonepe</string>
+		<string>paytmmp</string>
+		<string>paytm</string>
+		<string>bhim</string>
+		<string>credpay</string>
+		<string>ybl</string>
+		<string>imobileapp</string>
 	</array>
 </dict>
 </plist>

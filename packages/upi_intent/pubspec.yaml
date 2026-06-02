@@ -1,0 +1,38 @@
+name: upi_intent
+description: "Vendored & customized fork of upi_intent — launches UPI payment apps via a themeable built-in picker. Internal to this repo; not published."
+version: 1.0.1
+# Vendored into this repo (consumed via a path dependency) so we can theme the
+# picker and control the dependency. Original: https://pub.dev/packages/upi_intent
+publish_to: "none"
+homepage: https://pub.dev/packages/upi_intent
+
+topics:
+  - upi
+  - payments
+  - fintech
+  - india
+  - flutter
+
+environment:
+  sdk: ^3.10.1
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.0.2
+  url_launcher: ^6.2.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.upiintent.upi_intent
+        pluginClass: UpiIntentPlugin
+      ios:
+        pluginClass: UpiIntentPlugin
