@@ -9,6 +9,7 @@ import '../../data/data/expense/expense.dart';
 import '../../data/utils/upi_uri.dart';
 import '../../theme.dart';
 import 'components/category_picker_sheet.dart';
+import 'components/payment_confirm_dialog.dart';
 import 'components/payment_widgets.dart';
 
 /// Collects the amount, category and an optional note for a scanned UPI QR,
@@ -116,27 +117,23 @@ class _UpiPaymentScreenState extends State<UpiPaymentScreen> {
       return;
     }
 
-    // Null → user dismissed the picker. Save ONLY on a confirmed success.
+    // Null → user dismissed the picker without launching an app. Don't save.
     if (response == null) return;
 
+    // On a confirmed success we save straight away. Otherwise the status is
+    // unreliable (GPay often reports nothing on success; iOS never does), so
+    // we ask the user to confirm rather than silently dropping a real payment.
     if (!response.isSuccess) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Payment ${response.status.name} — nothing saved. '
-            'You can add it manually if it actually went through.',
-          ),
-          backgroundColor: AppTheme.dangerRed,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
+      if (!mounted) return;
+      final confirmed =
+          await PaymentConfirmDialog.show(context, amount: amount);
+      if (confirmed != true) return;
     }
 
     try {
       await _saveExpense(amount, _category!, note);
     } catch (e) {
-      if (mounted) _error('Payment succeeded but saving failed: $e');
+      if (mounted) _error('Saving failed: $e');
       return;
     }
 

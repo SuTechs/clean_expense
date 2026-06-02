@@ -1,6 +1,9 @@
 name: upi_intent
-description: "Launch UPI payment apps with a beautiful built-in app picker. Supports Android & iOS. NPCI spec compliant. The modern replacement for upi_pay."
+description: "Vendored & customized fork of upi_intent — launches UPI payment apps via a themeable built-in picker. Internal to this repo; not published."
 version: 1.0.1
+# Vendored into this repo (consumed via a path dependency) so we can theme the
+# picker and control the dependency. Original: https://pub.dev/packages/upi_intent
+publish_to: "none"
 homepage: https://pub.dev/packages/upi_intent
 
 topics:
@@ -10,9 +13,6 @@ topics:
   - india
   - flutter
 
-screenshots:
-  - description: 'Built-in minimal app picker and Example App interface'
-    path: screenshots/app_picker.png
 environment:
   sdk: ^3.10.1
   flutter: '>=3.10.0'
