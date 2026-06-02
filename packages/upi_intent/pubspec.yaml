@@ -1,0 +1,38 @@
+name: upi_intent
+description: "Launch UPI payment apps with a beautiful built-in app picker. Supports Android & iOS. NPCI spec compliant. The modern replacement for upi_pay."
+version: 1.0.1
+homepage: https://pub.dev/packages/upi_intent
+
+topics:
+  - upi
+  - payments
+  - fintech
+  - india
+  - flutter
+
+screenshots:
+  - description: 'Built-in minimal app picker and Example App interface'
+    path: screenshots/app_picker.png
+environment:
+  sdk: ^3.10.1
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.0.2
+  url_launcher: ^6.2.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.upiintent.upi_intent
+        pluginClass: UpiIntentPlugin
+      ios:
+        pluginClass: UpiIntentPlugin

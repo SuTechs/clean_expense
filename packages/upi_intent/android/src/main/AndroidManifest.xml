@@ -1,0 +1,31 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!--
+    REQUIRED for Android 11+ (API 30+)
+    Without this block, queryIntentActivities() will return empty list
+    and no UPI apps will be detected.
+
+    Add these same <queries> to your app's AndroidManifest.xml too!
+  -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:scheme="upi" />
+    </intent>
+    <!-- Popular UPI Apps — explicit package queries for Android 11+ -->
+    <package android:name="com.google.android.apps.nbu.paisa.user" />  <!-- Google Pay -->
+    <package android:name="net.one97.paytm" />                          <!-- Paytm -->
+    <package android:name="com.phonepe.app" />                          <!-- PhonePe -->
+    <package android:name="in.amazon.mShop.android.shopping" />         <!-- Amazon Pay -->
+    <package android:name="com.whatsapp" />                             <!-- WhatsApp Pay -->
+    <package android:name="com.freecharge.android" />                   <!-- FreeCharge -->
+    <package android:name="com.mobikwik_new" />                         <!-- MobiKwik -->
+    <package android:name="com.myairtelapp" />                          <!-- Airtel Thanks -->
+    <package android:name="com.axis.mobile" />                          <!-- Axis Mobile -->
+    <package android:name="com.sbi.lotusintouch" />                     <!-- YONO SBI -->
+    <package android:name="com.csam.icici.bank.imobile" />              <!-- iMobile ICICI -->
+    <package android:name="com.upi.axispaynew" />                       <!-- Axis Pay -->
+    <package android:name="com.samsung.android.spay" />                 <!-- Samsung Pay -->
+  </queries>
+
+</manifest>

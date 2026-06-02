@@ -64,7 +64,9 @@ dependencies:
 
   # UPI scan & pay
   mobile_scanner: ^7.2.0
-  upi_pay: ^1.1.0
+  # Vendored (see packages/upi_intent) so we can theme the built-in picker.
+  upi_intent:
+    path: packages/upi_intent
 
 
 

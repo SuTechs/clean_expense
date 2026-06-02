@@ -52,10 +52,12 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- Required (Android 11+) so upi_pay can discover installed UPI apps -->
+        <!-- Required (Android 11+) so upi_intent can discover installed UPI
+             apps. No host filter — many UPI apps register the `upi` scheme
+             without host="pay", and restricting it hides them. -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="upi" android:host="pay" />
+            <data android:scheme="upi" />
         </intent>
     </queries>
 </manifest>

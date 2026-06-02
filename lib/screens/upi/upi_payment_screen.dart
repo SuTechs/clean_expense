@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:upi_intent/upi_intent.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/command/commands.dart';
@@ -9,14 +10,17 @@ import '../../data/utils/upi_uri.dart';
 import '../../theme.dart';
 import 'components/category_picker_sheet.dart';
 import 'components/payment_widgets.dart';
-import 'components/upi_app_picker_sheet.dart';
 
 /// Collects the amount, category and an optional note for a scanned UPI QR,
-/// then lets the user pick a UPI app to pay with.
+/// then launches a UPI app to pay with (via the vendored `upi_intent` picker).
 ///
-/// The expense is saved ONLY when the user actually taps a UPI app in the
-/// picker (see [UpiAppPickerSheet.onBeforeLaunch]). We persist only amount +
-/// category (plus the existing note/date/type) — never payee details.
+/// The expense is saved ONLY when the payment app reports a SUCCESS status.
+/// We persist only amount + category (plus the existing note/date/type) —
+/// never payee details.
+///
+/// NOTE: UPI status is unreliable by design — Google Pay frequently returns no
+/// status even on success, and iOS cannot return transaction data at all. With
+/// strict success-only saving, those genuine payments will not be recorded.
 class UpiPaymentScreen extends StatefulWidget {
   final UpiQrData qr;
   const UpiPaymentScreen({super.key, required this.qr});
@@ -59,8 +63,7 @@ class _UpiPaymentScreenState extends State<UpiPaymentScreen> {
     );
   }
 
-  /// Builds + persists the expense. Called from the app picker the moment a
-  /// UPI app is tapped, so nothing is saved unless the user commits to paying.
+  /// Builds + persists the expense. Called only after a successful payment.
   Future<void> _saveExpense(double amount, String category, String note) {
     final expense = ExpenseData(
       id: _uuid.v4(),
@@ -94,32 +97,57 @@ class _UpiPaymentScreenState extends State<UpiPaymentScreen> {
     final note = _noteController.text.trim();
     final messenger = ScaffoldMessenger.of(context);
 
-    final paid = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppTheme.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => UpiAppPickerSheet(
-        vpa: widget.qr.vpa,
-        payeeName: widget.qr.name ?? widget.qr.vpa,
-        amount: amount,
-        transactionNote: note.isNotEmpty ? note : _category!,
-        // Save happens here — only when an app is actually tapped.
-        onBeforeLaunch: () => _saveExpense(amount, _category!, note),
-      ),
-    );
+    UpiResponse? response;
+    try {
+      // Shows the (themed) built-in app picker, launches the chosen UPI app,
+      // and resolves with the transaction status once control returns.
+      response = await UpiIntent.pay(
+        context: context,
+        payment: UpiPayment(
+          payeeVpa: widget.qr.vpa,
+          payeeName: widget.qr.name ?? widget.qr.vpa,
+          amount: amount,
+          transactionNote: note.isNotEmpty ? note : _category!,
+          transactionRefId: 'TXN${_uuid.v4().replaceAll('-', '')}',
+        ),
+      );
+    } on UpiException catch (e) {
+      _error(e.message);
+      return;
+    }
 
-    if (paid == true && mounted) {
-      Navigator.of(context).pop();
+    // Null → user dismissed the picker. Save ONLY on a confirmed success.
+    if (response == null) return;
+
+    if (!response.isSuccess) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Expense saved'),
+        SnackBar(
+          content: Text(
+            'Payment ${response.status.name} — nothing saved. '
+            'You can add it manually if it actually went through.',
+          ),
+          backgroundColor: AppTheme.dangerRed,
           behavior: SnackBarBehavior.floating,
         ),
       );
+      return;
     }
+
+    try {
+      await _saveExpense(amount, _category!, note);
+    } catch (e) {
+      if (mounted) _error('Payment succeeded but saving failed: $e');
+      return;
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Expense saved'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
