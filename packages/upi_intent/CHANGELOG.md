@@ -1,3 +1,13 @@
+## 1.0.1+vendored
+
+Forked from upstream 1.0.1 and vendored into this repo (consumed via a path
+dependency). Changes:
+
+* 🎨 Themed the built-in app picker to the host app via `colorScheme.primary`
+* 🔧 Removed the deprecated manifest `package=` attribute (AGP 8 `namespace`)
+* 🧹 Stripped `example/`, tests, screenshots and unused plugin boilerplate
+* 🚫 `publish_to: "none"` — internal only
+
 ## 1.0.1
 
 * 🏷️ Added `topics` for better pub.dev search discoverability
