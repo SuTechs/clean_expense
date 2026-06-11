@@ -33,7 +33,7 @@ types:
         index: 2
   ExpenseData:
     typeId: 2
-    nextIndex: 6
+    nextIndex: 7
     fields:
       id:
         index: 0
@@ -47,3 +47,5 @@ types:
         index: 4
       note:
         index: 5
+      updatedAt:
+        index: 6

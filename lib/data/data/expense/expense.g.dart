@@ -13,6 +13,7 @@ _ExpenseData _$ExpenseDataFromJson(Map<String, dynamic> json) => _ExpenseData(
   date: DateTime.parse(json['date'] as String),
   type: $enumDecode(_$TransactionTypeEnumMap, json['type']),
   note: json['note'] as String,
+  updatedAt: (json['updatedAt'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ExpenseDataToJson(_ExpenseData instance) =>
@@ -23,6 +24,7 @@ Map<String, dynamic> _$ExpenseDataToJson(_ExpenseData instance) =>
       'date': instance.date.toIso8601String(),
       'type': _$TransactionTypeEnumMap[instance.type]!,
       'note': instance.note,
+      'updatedAt': instance.updatedAt,
     };
 
 const _$TransactionTypeEnumMap = {

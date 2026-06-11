@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/bloc/app_bloc.dart';
 import '../../theme.dart';
+import '../profile/profile_screen.dart';
+import '../stats/export_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -42,23 +44,12 @@ class SettingsScreen extends StatelessWidget {
             _buildSectionHeader("ACCOUNT"),
             _buildSettingItem(
               icon: Icons.person_outline_rounded,
-              title: "Profile & Storage",
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentPurple.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "Coming Soon",
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.accentPurple,
-                  ),
-                ),
+              title: "Profile & Backup",
+              subtitle: "Name, Google Drive backup & restore",
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
               ),
-              onTap: () {},
             ),
             const SizedBox(height: 24),
             _buildSectionHeader("PREFERENCES"),
@@ -84,6 +75,15 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               onTap: () => _showCurrencyPicker(context, appBloc),
+            ),
+            _buildSettingItem(
+              icon: Icons.download_rounded,
+              title: "Export Data",
+              subtitle: "PDF report or CSV for Excel / Sheets",
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ExportScreen()),
+              ),
             ),
             const SizedBox(height: 24),
             _buildSectionHeader("SUPPORT & SOCIAL"),

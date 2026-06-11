@@ -89,6 +89,27 @@ class TransactionParserService {
     );
   }
 
+  /// Rebuilds the canonical input string ("note #category amount") for a
+  /// transaction so it can be re-edited in the input field.
+  ///
+  /// The amount goes last so [parse] reads it back as the amount even when
+  /// the note itself contains numbers (e.g. "2 burgers #food 500").
+  String reconstruct({
+    required String note,
+    required String category,
+    required double amount,
+  }) {
+    final amountText = amount % 1 == 0
+        ? amount.toStringAsFixed(0)
+        : amount.toString();
+
+    return [
+      note.trim(),
+      '#$category',
+      amountText,
+    ].where((part) => part.isNotEmpty).join(' ');
+  }
+
   /// Cleans up the notes string by removing extra whitespace.
   String? _cleanNotes(String text) {
     // Remove extra whitespace and trim

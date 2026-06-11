@@ -16,12 +16,12 @@ class BalanceCard extends StatefulWidget {
 }
 
 class _BalanceCardState extends State<BalanceCard> {
-  bool _isVisible = true;
-
   @override
   Widget build(BuildContext context) {
     final bloc = context.watch<ExpenseBloc>();
     final appBloc = context.watch<AppBloc>();
+    // Persisted in Hive so the choice survives restarts.
+    final isVisible = appBloc.isBalanceVisible;
     final currencyFormat = NumberFormat.currency(
       symbol: appBloc.currency,
       decimalDigits: 0,
@@ -46,12 +46,12 @@ class _BalanceCardState extends State<BalanceCard> {
               children: [
                 // Toggle Visibility Button
                 InkWell(
-                  onTap: () => setState(() => _isVisible = !_isVisible),
+                  onTap: () => appBloc.isBalanceVisible = !isVisible,
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: Icon(
-                      _isVisible
+                      isVisible
                           ? Icons.remove_red_eye_outlined
                           : Icons.visibility_off_outlined,
                       color: AppTheme.primaryNavy,
@@ -65,7 +65,7 @@ class _BalanceCardState extends State<BalanceCard> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      _isVisible
+                      isVisible
                           ? currencyFormat.format(bloc.totalBalance)
                           : "(¬_¬)", // The hidden face
                       style: const TextStyle(
@@ -209,14 +209,17 @@ class _BalanceCardState extends State<BalanceCard> {
                 _buildStatItem(
                   "INCOMING",
                   "+${currencyFormat.format(bloc.totalIncoming)}",
+                  isVisible: isVisible,
                 ),
                 _buildStatItem(
                   "OUTGOING",
                   "-${currencyFormat.format(bloc.totalOutgoing)}",
+                  isVisible: isVisible,
                 ),
                 _buildStatItem(
                   "INVESTED",
                   currencyFormat.format(bloc.totalInvested),
+                  isVisible: isVisible,
                 ),
               ],
             ),
@@ -229,13 +232,14 @@ class _BalanceCardState extends State<BalanceCard> {
   Widget _buildStatItem(
     String label,
     String value, {
+    required bool isVisible,
     Color labelColor = AppTheme.primaryNavy,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _isVisible ? value : "*****",
+          isVisible ? value : "*****",
           style: TextStyle(
             color: labelColor,
             fontSize: 16,

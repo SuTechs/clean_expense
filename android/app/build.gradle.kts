@@ -34,7 +34,7 @@ android {
         applicationId = "com.sutechs.expense"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24 // flutter_gemma (on-device AI) requires 24+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

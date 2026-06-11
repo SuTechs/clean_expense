@@ -55,7 +55,15 @@ class AppBloc extends AbstractBloc {
 
   bool get isGuestUser => currentUser.id == "guest";
 
-  bool get isShowOnboarding => _hive.getIsShowOnboarding();
+  /// Onboarding
+  late bool _showOnboarding = _hive.getIsShowOnboarding();
+
+  bool get isShowOnboarding => _showOnboarding;
+
+  void completeOnboarding() {
+    _hive.setOnboardingComplete();
+    notify(() => _showOnboarding = false);
+  }
 
   String get currentUserId => currentUser.id;
 
@@ -76,6 +84,24 @@ class AppBloc extends AbstractBloc {
   set showPercentage(bool value) {
     _showPercentage = value;
     _hive.setShowPercentage(value);
+    notifyListeners();
+  }
+
+  late bool _hasSeenTypeSelectorHint = _hive.getHasSeenTypeSelectorHint;
+  bool get hasSeenTypeSelectorHint => _hasSeenTypeSelectorHint;
+
+  set hasSeenTypeSelectorHint(bool value) {
+    _hasSeenTypeSelectorHint = value;
+    _hive.setHasSeenTypeSelectorHint(value);
+    notifyListeners();
+  }
+
+  late bool _isBalanceVisible = _hive.getIsBalanceVisible;
+  bool get isBalanceVisible => _isBalanceVisible;
+
+  set isBalanceVisible(bool value) {
+    _isBalanceVisible = value;
+    _hive.setIsBalanceVisible(value);
     notifyListeners();
   }
 

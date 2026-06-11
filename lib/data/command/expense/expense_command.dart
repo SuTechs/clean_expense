@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../api/hive/service_extension.dart';
 import '../../data/expense/expense.dart';
+import '../../utils/time_utils.dart';
+import '../sync/sync_command.dart';
 import 'expense_dummy_data.dart';
 
 class ExpenseCommand extends BaseAppCommand {
@@ -28,13 +30,16 @@ class ExpenseCommand extends BaseAppCommand {
 
   /// add expense
   Future<void> addExpense(ExpenseData expense) async {
+    // Stamp for per-record merge during Drive sync.
+    expense = expense.copyWith(updatedAt: TimeUtils.nowMillis);
+
     // 1. Optimistic Update
     expenseBloc.addExpense(expense);
 
     try {
       // 2. Persist
       await hive.addExpense(expense);
-      // save to server as well
+      SyncCommand().scheduleBackup();
     } catch (e) {
       // 3. Rollback on failure
       expenseBloc.deleteExpense(expense.id);
@@ -58,7 +63,8 @@ class ExpenseCommand extends BaseAppCommand {
     try {
       // 2. Persist
       await hive.deleteExpense(id);
-      // delete from server as well
+      await SyncCommand().recordTombstone(id);
+      SyncCommand().scheduleBackup();
     } catch (e) {
       // 3. Rollback
       expenseBloc.addExpense(expenseToDelete);
@@ -69,6 +75,9 @@ class ExpenseCommand extends BaseAppCommand {
 
   /// update expense
   Future<void> updateExpense(ExpenseData expense) async {
+    // Stamp for per-record merge during Drive sync.
+    expense = expense.copyWith(updatedAt: TimeUtils.nowMillis);
+
     // Find old to allow rollback
     final oldExpense = expenseBloc.expenses.cast<ExpenseData?>().firstWhere(
       (e) => e?.id == expense.id,
@@ -81,7 +90,7 @@ class ExpenseCommand extends BaseAppCommand {
     try {
       // 2. Persist
       await hive.updateExpense(expense);
-      // update to server as well
+      SyncCommand().scheduleBackup();
     } catch (e) {
       // 3. Rollback
       if (oldExpense != null) {

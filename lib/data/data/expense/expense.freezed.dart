@@ -15,7 +15,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ExpenseData {
 
- String get id; double get amount; String get category; DateTime get date; TransactionType get type; String get note;
+ String get id; double get amount; String get category; DateTime get date; TransactionType get type; String get note;/// Epoch millis of the last local edit; used for per-record merge during
+/// Drive sync. Null for records created before sync existed (treated as
+/// oldest during merge). Nullable keeps the Hive adapter backward
+/// compatible — do not reorder existing fields.
+ int? get updatedAt;
 /// Create a copy of ExpenseData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +32,16 @@ $ExpenseDataCopyWith<ExpenseData> get copyWith => _$ExpenseDataCopyWithImpl<Expe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExpenseData&&(identical(other.id, id) || other.id == id)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.category, category) || other.category == category)&&(identical(other.date, date) || other.date == date)&&(identical(other.type, type) || other.type == type)&&(identical(other.note, note) || other.note == note));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExpenseData&&(identical(other.id, id) || other.id == id)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.category, category) || other.category == category)&&(identical(other.date, date) || other.date == date)&&(identical(other.type, type) || other.type == type)&&(identical(other.note, note) || other.note == note)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,amount,category,date,type,note);
+int get hashCode => Object.hash(runtimeType,id,amount,category,date,type,note,updatedAt);
 
 @override
 String toString() {
-  return 'ExpenseData(id: $id, amount: $amount, category: $category, date: $date, type: $type, note: $note)';
+  return 'ExpenseData(id: $id, amount: $amount, category: $category, date: $date, type: $type, note: $note, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +52,7 @@ abstract mixin class $ExpenseDataCopyWith<$Res>  {
   factory $ExpenseDataCopyWith(ExpenseData value, $Res Function(ExpenseData) _then) = _$ExpenseDataCopyWithImpl;
 @useResult
 $Res call({
- String id, double amount, String category, DateTime date, TransactionType type, String note
+ String id, double amount, String category, DateTime date, TransactionType type, String note, int? updatedAt
 });
 
 
@@ -65,7 +69,7 @@ class _$ExpenseDataCopyWithImpl<$Res>
 
 /// Create a copy of ExpenseData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? amount = null,Object? category = null,Object? date = null,Object? type = null,Object? note = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? amount = null,Object? category = null,Object? date = null,Object? type = null,Object? note = null,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
@@ -73,7 +77,8 @@ as double,category: null == category ? _self.category : category // ignore: cast
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as DateTime,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransactionType,note: null == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
-as String,
+as String,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -158,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  double amount,  String category,  DateTime date,  TransactionType type,  String note)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  double amount,  String category,  DateTime date,  TransactionType type,  String note,  int? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ExpenseData() when $default != null:
-return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that.note);case _:
+return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that.note,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -179,10 +184,10 @@ return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  double amount,  String category,  DateTime date,  TransactionType type,  String note)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  double amount,  String category,  DateTime date,  TransactionType type,  String note,  int? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _ExpenseData():
-return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that.note);case _:
+return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that.note,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +204,10 @@ return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  double amount,  String category,  DateTime date,  TransactionType type,  String note)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  double amount,  String category,  DateTime date,  TransactionType type,  String note,  int? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ExpenseData() when $default != null:
-return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that.note);case _:
+return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that.note,_that.updatedAt);case _:
   return null;
 
 }
@@ -214,7 +219,7 @@ return $default(_that.id,_that.amount,_that.category,_that.date,_that.type,_that
 @JsonSerializable()
 
 class _ExpenseData extends ExpenseData {
-  const _ExpenseData({required this.id, required this.amount, required this.category, required this.date, required this.type, required this.note}): super._();
+  const _ExpenseData({required this.id, required this.amount, required this.category, required this.date, required this.type, required this.note, this.updatedAt}): super._();
   factory _ExpenseData.fromJson(Map<String, dynamic> json) => _$ExpenseDataFromJson(json);
 
 @override final  String id;
@@ -223,6 +228,11 @@ class _ExpenseData extends ExpenseData {
 @override final  DateTime date;
 @override final  TransactionType type;
 @override final  String note;
+/// Epoch millis of the last local edit; used for per-record merge during
+/// Drive sync. Null for records created before sync existed (treated as
+/// oldest during merge). Nullable keeps the Hive adapter backward
+/// compatible — do not reorder existing fields.
+@override final  int? updatedAt;
 
 /// Create a copy of ExpenseData
 /// with the given fields replaced by the non-null parameter values.
@@ -237,16 +247,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExpenseData&&(identical(other.id, id) || other.id == id)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.category, category) || other.category == category)&&(identical(other.date, date) || other.date == date)&&(identical(other.type, type) || other.type == type)&&(identical(other.note, note) || other.note == note));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExpenseData&&(identical(other.id, id) || other.id == id)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.category, category) || other.category == category)&&(identical(other.date, date) || other.date == date)&&(identical(other.type, type) || other.type == type)&&(identical(other.note, note) || other.note == note)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,amount,category,date,type,note);
+int get hashCode => Object.hash(runtimeType,id,amount,category,date,type,note,updatedAt);
 
 @override
 String toString() {
-  return 'ExpenseData(id: $id, amount: $amount, category: $category, date: $date, type: $type, note: $note)';
+  return 'ExpenseData(id: $id, amount: $amount, category: $category, date: $date, type: $type, note: $note, updatedAt: $updatedAt)';
 }
 
 
@@ -257,7 +267,7 @@ abstract mixin class _$ExpenseDataCopyWith<$Res> implements $ExpenseDataCopyWith
   factory _$ExpenseDataCopyWith(_ExpenseData value, $Res Function(_ExpenseData) _then) = __$ExpenseDataCopyWithImpl;
 @override @useResult
 $Res call({
- String id, double amount, String category, DateTime date, TransactionType type, String note
+ String id, double amount, String category, DateTime date, TransactionType type, String note, int? updatedAt
 });
 
 
@@ -274,7 +284,7 @@ class __$ExpenseDataCopyWithImpl<$Res>
 
 /// Create a copy of ExpenseData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? amount = null,Object? category = null,Object? date = null,Object? type = null,Object? note = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? amount = null,Object? category = null,Object? date = null,Object? type = null,Object? note = null,Object? updatedAt = freezed,}) {
   return _then(_ExpenseData(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
@@ -282,7 +292,8 @@ as double,category: null == category ? _self.category : category // ignore: cast
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as DateTime,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransactionType,note: null == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
-as String,
+as String,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
