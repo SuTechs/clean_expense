@@ -83,9 +83,7 @@ Connect with us:
 - [Instagram](https://instagram.com/sutechs)
 
 ## Credits
-Huge thanks to **[Antigravity](https://antigravity.google/)** for the incredible assistance in building this project! 🚀
-
-And to **[Claude Code](https://claude.com/claude-code)** for building v2 — edit/delete, onboarding, Google Drive sync, export, and the on-device AI assistant. 🤖
+Huge thanks to **[Antigravity](https://antigravity.google/)** and **[Claude Code](https://claude.com/claude-code)** for the incredible assistance in building this project! 🚀
 
 ## License
 Copyright © 2026 **SuTechs**. All Rights Reserved.
