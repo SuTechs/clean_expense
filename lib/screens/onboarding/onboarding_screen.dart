@@ -73,11 +73,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_completing) return;
     _completing = true;
 
-    // Flipping the onboarding flag rebuilds _AppBootstrapper into MainScreen.
-    await OnboardingCommand().complete(
-      name: _nameController.text,
-      sawTypeSelectorPage: _maxVisitedPage >= _typeSelectorPageIndex,
-    );
+    try {
+      // Flipping the onboarding flag rebuilds _AppBootstrapper into
+      // MainScreen.
+      await OnboardingCommand().complete(
+        name: _nameController.text,
+        sawTypeSelectorPage: _maxVisitedPage >= _typeSelectorPageIndex,
+      );
+    } catch (e) {
+      // Without the reset, one failed write makes every later Get
+      // Started/Skip tap a silent no-op for the rest of the session.
+      _completing = false;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Couldn't finish setup: $e"),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleEnableDriveSync() async {

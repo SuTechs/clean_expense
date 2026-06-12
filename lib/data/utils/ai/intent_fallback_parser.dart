@@ -1,4 +1,5 @@
 import '../../data/ai/ai_intent.dart';
+import '../../data/expense/expense.dart';
 
 /// Keyword fallback when the model fails to produce a usable tool call —
 /// same spirit as TransactionParserService. Works directly on the USER's
@@ -18,6 +19,7 @@ class IntentFallbackParser {
       metric: metric,
       period: period,
       dateOffset: offset,
+      type: _type(text, metric),
       category: _category(text, categories),
     );
   }
@@ -36,6 +38,14 @@ class IntentFallbackParser {
     if (has(RegExp(r'breakdown|by category|split'))) {
       return AiMetric.categoryBreakdown;
     }
+    // Counting/listing checks come BEFORE the income/invest/saved metrics so
+    // "income transactions" lists income instead of summing it.
+    if (has(RegExp(r'how many|count|number of'))) {
+      return AiMetric.transactionCount;
+    }
+    if (has(RegExp(r'transactions?|purchases|what did i buy|list my'))) {
+      return AiMetric.listTransactions;
+    }
     if (has(RegExp(r'savings? rate'))) return AiMetric.savingsRate;
     if (has(RegExp(r'\bsaved?\b'))) return AiMetric.totalSaved;
     if (has(RegExp(r'invest'))) return AiMetric.totalInvested;
@@ -48,19 +58,28 @@ class IntentFallbackParser {
     }
     if (has(RegExp(r'which day|what day|weekday'))) return AiMetric.dayOfWeek;
     if (has(RegExp(r'project|on track|forecast'))) return AiMetric.projection;
-    if (has(RegExp(r'how many|count|number of'))) {
-      return AiMetric.transactionCount;
-    }
-    // "give/show/list ... transactions", "what did I buy" (after the count
-    // check so "how many transactions" stays a count).
-    if (has(RegExp(r'transactions?|purchases|what did i buy|list my'))) {
-      return AiMetric.listTransactions;
-    }
     if (has(RegExp(r'frequent|most often'))) {
       return AiMetric.mostFrequentCategory;
     }
     if (has(RegExp(r'sp(end|ent)|cost|expense'))) {
       return AiMetric.totalSpending;
+    }
+    return null;
+  }
+
+  /// Type filter for counting/listing metrics ("income transactions",
+  /// "investment purchases"); other metrics imply their own type.
+  static TransactionType? _type(String text, AiMetric metric) {
+    if (metric != AiMetric.transactionCount &&
+        metric != AiMetric.listTransactions) {
+      return null;
+    }
+    if (RegExp(r'income|earning|salary').hasMatch(text)) {
+      return TransactionType.incoming;
+    }
+    if (text.contains('invest')) return TransactionType.invested;
+    if (RegExp(r'expense|sp(end|ent)').hasMatch(text)) {
+      return TransactionType.outgoing;
     }
     return null;
   }

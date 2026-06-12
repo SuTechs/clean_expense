@@ -40,6 +40,15 @@ void main() {
       final csv = CsvExporter.buildCsv([_expense(note: 'café ☕ 🍕')]);
       expect(csv, contains('café ☕ 🍕'));
     });
+
+    test('neutralizes formula injection in notes', () {
+      final csv = CsvExporter.buildCsv([
+        _expense(note: '=HYPERLINK("http://evil","x")'),
+      ]);
+      // Prefixed with a quote so spreadsheets treat it as text.
+      expect(csv, contains("'=HYPERLINK"));
+      expect(csv, isNot(contains(',=HYPERLINK')));
+    });
   });
 
   group('PdfExporter', () {

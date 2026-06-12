@@ -77,6 +77,9 @@ class AiModelCommand extends BaseAppCommand {
   }
 
   /// Loads model weights into memory (takes seconds on first use).
+  /// On failure the status returns to `installed` (not stuck at `loading`)
+  /// and the error propagates so the caller can fall back to the
+  /// model-free keyword parser.
   Future<void> ensureLoaded() async {
     if (AiEngine().isLoaded) {
       aiBloc.setStatus(AiModelStatus.ready);
@@ -89,16 +92,22 @@ class AiModelCommand extends BaseAppCommand {
         .toSet()
         .toList();
 
-    await AiEngine().load(
-      model: installedModel,
-      systemInstruction: AiPromptBuilder.systemInstruction(
-        currency: appBloc.currency,
-        now: DateTime.now(),
-        categories: categories,
-      ),
-      tools: [AiPromptBuilder.buildTool()],
-    );
-    aiBloc.setStatus(AiModelStatus.ready);
+    try {
+      await AiEngine().load(
+        model: installedModel,
+        systemInstruction: AiPromptBuilder.systemInstruction(
+          currency: appBloc.currency,
+          now: DateTime.now(),
+          categories: categories,
+        ),
+        tools: [AiPromptBuilder.buildTool()],
+      );
+      aiBloc.setStatus(AiModelStatus.ready);
+    } catch (e) {
+      debugPrint('AiModelCommand.ensureLoaded: $e');
+      aiBloc.setStatus(AiModelStatus.installed);
+      rethrow;
+    }
   }
 
   /// Frees model memory; chat history (in bloc) survives.

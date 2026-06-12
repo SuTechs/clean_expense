@@ -45,7 +45,15 @@ class AiQueryCommand extends BaseAppCommand {
     aiBloc.isGenerating = true;
 
     try {
-      await AiModelCommand().ensureLoaded();
+      // A failed model load shouldn't kill the question: the keyword
+      // fallback parser needs no model at all.
+      var modelAvailable = true;
+      try {
+        await AiModelCommand().ensureLoaded();
+      } catch (e) {
+        debugPrint('AiQueryCommand.ask: model load failed, using fallback');
+        modelAvailable = false;
+      }
 
       final categories = expenseBloc.expenses
           .map((e) => e.category)
@@ -53,7 +61,9 @@ class AiQueryCommand extends BaseAppCommand {
           .toList();
 
       final intent =
-          await _intentFromModel(trimmed, categories) ??
+          (modelAvailable
+              ? await _intentFromModel(trimmed, categories)
+              : null) ??
           IntentFallbackParser.parse(trimmed, categories: categories);
 
       if (intent == null) {

@@ -126,11 +126,15 @@ class IntentExecutor {
         if (top == null) {
           return AiAnswer(text: "No spending recorded $when.");
         }
+        // Guard the share: zero-amount transactions make topCategory
+        // non-null while totalSpending is 0 (0/0 -> "NaN% of the total").
+        final sharePart = stats.totalSpending > 0
+            ? " (${(top.value / stats.totalSpending * 100).toStringAsFixed(0)}% of the total)"
+            : "";
         return AiAnswer(
           text:
               "Your biggest spending category $when is #${top.key} at "
-              "${_money(top.value)} "
-              "(${(top.value / stats.totalSpending * 100).toStringAsFixed(0)}% of the total).",
+              "${_money(top.value)}$sharePart.",
           widget: _categoryPie(stats, intent.topN, when),
         );
 
@@ -213,17 +217,16 @@ class IntentExecutor {
         );
 
       case AiMetric.dayOfWeek:
-        final buckets = List.generate(7, (_) => 0.0);
-        final periodExpenses = StatisticsHelper(
-          filtered,
-          period: intent.period,
-          referenceDate: reference,
-        );
-        if (periodExpenses.totalSpending == 0) {
+        if (stats.totalSpending == 0) {
           return AiAnswer(text: "No spending recorded $when.");
         }
+        // Bucket only the asked-for period: the chart used to show
+        // all-time weekday totals under a "this month" answer.
+        final buckets = List.generate(7, (_) => 0.0);
         for (final e in filtered.where(
-          (e) => e.type == TransactionType.outgoing,
+          (e) =>
+              e.type == TransactionType.outgoing &&
+              _inPeriod(e.date, intent.period, reference),
         )) {
           buckets[e.date.weekday - 1] += e.amount;
         }

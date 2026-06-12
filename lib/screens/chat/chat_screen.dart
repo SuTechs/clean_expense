@@ -123,10 +123,11 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     if (confirmed != true) return;
 
-    _interaction.onExpenseDeleted(expense.id);
-
     try {
       await ExpenseCommand().deleteExpense(expense.id);
+      // Clear selection only after the delete sticks: on failure the
+      // command rolls the expense back and it should stay selected.
+      _interaction.onExpenseDeleted(expense.id);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

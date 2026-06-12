@@ -261,35 +261,9 @@ class ExpenseBloc extends AbstractBloc {
     return map.map((key, value) => MapEntry(key, value.toList()..sort()));
   }
 
-  void renameCategory(String oldName, String newName) {
-    bool changed = false;
-    for (int i = 0; i < _expenses.length; i++) {
-      if (_expenses[i].category == oldName) {
-        _expenses[i] = _expenses[i].copyWith(category: newName);
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      _expenses = copyList(_expenses);
-      notifyListeners();
-    }
-  }
-
-  void deleteCategory(String categoryName, {required bool deleteTransactions}) {
-    if (deleteTransactions) {
-      _expenses.removeWhere((e) => e.category == categoryName);
-    } else {
-      // Mark as deleted (rename to "deleted")
-      for (int i = 0; i < _expenses.length; i++) {
-        if (_expenses[i].category == categoryName) {
-          _expenses[i] = _expenses[i].copyWith(category: "deleted");
-        }
-      }
-    }
-    _expenses = copyList(_expenses);
-    notifyListeners();
-  }
+  // Category rename/delete live in ExpenseCommand: they must persist to
+  // Hive with updatedAt stamps and tombstones, or restarts and Drive sync
+  // silently revert them.
 
   int getCategoryCount(String categoryName) {
     return _expenses.where((e) => e.category == categoryName).length;

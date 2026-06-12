@@ -57,6 +57,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
   void _send([String? preset]) {
     final text = preset ?? _controller.text;
     if (text.trim().isEmpty) return;
+    // Guard BEFORE clearing: the keyboard send action isn't disabled while
+    // generating, and clearing first silently destroyed the typed question.
+    if (context.read<AiBloc>().isGenerating) return;
     _controller.clear();
     AiQueryCommand().ask(text);
 
@@ -128,18 +131,23 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     ),
                   ),
                 ),
+                // Disabled mid-generation: closing/deleting the native
+                // session under a running inference can crash natively.
                 if (aiBloc.messages.isNotEmpty)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'clear',
-                    child: Text("Clear chat"),
+                    enabled: !aiBloc.isGenerating,
+                    child: const Text("Clear chat"),
                   ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'switch',
-                  child: Text("Switch model"),
+                  enabled: !aiBloc.isGenerating,
+                  child: const Text("Switch model"),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
-                  child: Text("Delete AI model"),
+                  enabled: !aiBloc.isGenerating,
+                  child: const Text("Delete AI model"),
                 ),
               ],
             ),

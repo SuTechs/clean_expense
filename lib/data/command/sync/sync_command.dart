@@ -28,6 +28,17 @@ class SyncCommand extends BaseAppCommand {
   static Timer? _debounce;
   static const _debounceDelay = Duration(seconds: 30);
 
+  /// In-flight sync, so concurrent triggers await the same round trip
+  /// instead of silently no-oping (the old status==syncing guard made the
+  /// on-pause flush a no-op exactly when a sync was already running).
+  static Future<void>? _inFlight;
+
+  /// Bumped on every local change. The sync snapshots it before reading
+  /// Hive and only clears the dirty flag if nothing changed during the
+  /// (potentially slow) upload — otherwise that change would never be
+  /// backed up until the next edit.
+  static int _changeCounter = 0;
+
   // How stale the last sync must be before an open/resume pulls from Drive.
   // Kept long on purpose: every silent sign-in can flash Android's
   // Credential Manager sheet, so routine opens shouldn't trigger one.
@@ -111,6 +122,7 @@ class SyncCommand extends BaseAppCommand {
   /// Marks local state dirty and schedules a debounced upload. Called from
   /// ExpenseCommand after every add/update/delete.
   void scheduleBackup() {
+    _changeCounter++;
     if (!hive.getSyncEnabled) return;
     hive.setSyncDirty(true);
     _debounce?.cancel();
@@ -119,18 +131,22 @@ class SyncCommand extends BaseAppCommand {
 
   /// Records that [id] was deleted locally so the deletion propagates to
   /// other devices instead of being resurrected by the next merge.
+  /// Recorded even while sync is off: deletes made before (re)connecting
+  /// would otherwise be resurrected by the first merge.
   Future<void> recordTombstone(String id) async {
-    if (!hive.getSyncEnabled) return;
     final tombstones = hive.getTombstones();
     tombstones[id] = TimeUtils.nowMillis;
     await hive.setTombstones(tombstones);
   }
 
   /// Uploads immediately if a change is pending (app going to background).
+  /// Awaits an in-flight sync first; if changes landed during it, runs one
+  /// more round so nothing is left un-backed-up.
   Future<void> flushPending() async {
     if (!hive.getSyncEnabled || !hive.getSyncDirty) return;
     _debounce?.cancel();
     await syncNow();
+    if (hive.getSyncDirty) await syncNow();
   }
 
   /// Called on app resume: sync when dirty or when the last sync is stale.
@@ -145,10 +161,19 @@ class SyncCommand extends BaseAppCommand {
   /// Full download → merge → upload round trip. Always UI-less: it runs on
   /// the persisted authorization grant alone, so it can never pop a sign-in
   /// sheet — when the grant is gone the user reconnects from the profile.
-  Future<void> syncNow() async {
-    if (!hive.getSyncEnabled) return;
-    if (syncBloc.status == SyncStatus.syncing) return;
+  /// Concurrent calls share the in-flight round trip.
+  Future<void> syncNow() {
+    if (!hive.getSyncEnabled) return Future.value();
 
+    final existing = _inFlight;
+    if (existing != null) return existing;
+
+    final run = _runSync().whenComplete(() => _inFlight = null);
+    _inFlight = run;
+    return run;
+  }
+
+  Future<void> _runSync() async {
     syncBloc.setSyncing();
     http.Client? client;
     try {
@@ -171,15 +196,21 @@ class SyncCommand extends BaseAppCommand {
       );
     } catch (e) {
       debugPrint('SyncCommand.syncNow: $e');
-      syncBloc.setError('Sync failed: $e');
+      syncBloc.setError('Sync failed, please try again');
     } finally {
       client?.close();
     }
   }
 
   /// Remote-wins restore (explicit user action from the profile screen).
-  /// Returns false when no backup exists.
+  /// Returns false when no backup exists. Any failure (including cancelled
+  /// sign-in) restores the bloc state — leaving it stuck in `syncing` would
+  /// make the status guard silently disable all future syncs.
   Future<bool> restoreNow() async {
+    // Don't interleave a remote-wins replace with an in-flight merge.
+    final inFlight = _inFlight;
+    if (inFlight != null) await inFlight;
+
     http.Client? client;
     try {
       syncBloc.setSyncing();
@@ -213,12 +244,21 @@ class SyncCommand extends BaseAppCommand {
       await hive.setLastBackupAt(now);
       syncBloc.setSynced(now);
       return true;
+    } catch (e) {
+      debugPrint('SyncCommand.restoreNow: $e');
+      if (hive.getSyncEnabled) {
+        syncBloc.setConnected(hive.getSyncAccountEmail, hive.getLastBackupAt);
+      } else {
+        syncBloc.setDisconnected();
+      }
+      rethrow;
     } finally {
       client?.close();
     }
   }
 
   Future<void> _syncWithClient(http.Client client) async {
+    final changesAtStart = _changeCounter;
     final service = DriveBackupService(client);
 
     var fileId = hive.getSyncFileId ?? await service.findBackupFileId();
@@ -243,7 +283,14 @@ class SyncCommand extends BaseAppCommand {
 
     final newFileId = await service.upload(merged, existingFileId: fileId);
     await hive.setSyncFileId(newFileId);
-    await hive.setSyncDirty(false);
+
+    // Only clear the dirty flag if nothing changed while we were uploading;
+    // a change made mid-upload isn't in the backup we just wrote and must
+    // trigger another round (the debounce timer it armed is still running).
+    if (_changeCounter == changesAtStart) {
+      await hive.setSyncDirty(false);
+    }
+
     final now = TimeUtils.nowMillis;
     await hive.setLastBackupAt(now);
     syncBloc.setSynced(now);
@@ -285,22 +332,26 @@ class SyncCommand extends BaseAppCommand {
     );
   }
 
-  /// Adopts profile/settings from the backup. During a normal merge this
-  /// only fills local defaults (fresh install); [force] (restore) always
-  /// takes the remote values.
+  /// Adopts profile/settings from the backup. During a normal merge the
+  /// newer profile wins (by UserData.updatedAt) so a rename on device A
+  /// propagates to device B instead of being overwritten by B's next
+  /// upload; [force] (restore) always takes the remote values.
   Future<void> _adoptRemoteProfile(
     BackupData remote, {
     bool force = false,
   }) async {
     final remoteName = remote.user.name.trim();
     final localIsDefault = appBloc.currentUser.name == 'Guest';
+    final remoteIsNewer = remote.user.updatedAt > appBloc.currentUser.updatedAt;
     if (remoteName.isNotEmpty &&
         remoteName != 'Guest' &&
-        (force || localIsDefault)) {
+        (force || localIsDefault || remoteIsNewer)) {
       await SetCurrentUserCommand().run(
         appBloc.currentUser.copyWith(
           name: remoteName,
-          updatedAt: TimeUtils.nowMillis,
+          // Carry the ORIGIN's edit time: stamping "now" would make every
+          // adopting device claim to be newest and ping-pong the profile.
+          updatedAt: remote.user.updatedAt,
         ),
       );
     }

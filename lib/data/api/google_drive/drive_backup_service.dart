@@ -14,14 +14,29 @@ class DriveBackupService {
 
   DriveBackupService(http.Client client) : _api = drive.DriveApi(client);
 
+  /// Finds the backup file, self-healing duplicates: two devices doing
+  /// their first-ever sync concurrently can each create a backup.json,
+  /// after which each forever updates its own copy and they never
+  /// converge. Keep the newest, best-effort delete the rest.
   Future<String?> findBackupFileId() async {
     final result = await _api.files.list(
       spaces: 'appDataFolder',
       q: "name = '$fileName' and trashed = false",
+      orderBy: 'modifiedTime desc',
       $fields: 'files(id, modifiedTime)',
     );
     final files = result.files;
     if (files == null || files.isEmpty) return null;
+
+    for (final duplicate in files.skip(1)) {
+      final id = duplicate.id;
+      if (id == null) continue;
+      try {
+        await _api.files.delete(id);
+      } catch (_) {
+        // Best effort; the newest file is still authoritative.
+      }
+    }
     return files.first.id;
   }
 

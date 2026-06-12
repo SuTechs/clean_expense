@@ -18,6 +18,18 @@ class AiEngine {
   InferenceModel? _model;
   InferenceChat? _chat;
 
+  /// Serializes load/ask/unload/delete. Without it, unload() during an
+  /// in-flight load() was a silent no-op (model stayed resident in the
+  /// background — the OOM we tuned against), and unload during generation
+  /// closed the native session under a running inference.
+  Future<void> _queue = Future.value();
+
+  Future<T> _serial<T>(Future<T> Function() op) {
+    final result = _queue.then((_) => op());
+    _queue = result.then((_) {}, onError: (_) {});
+    return result;
+  }
+
   bool get isLoaded => _chat != null;
 
   Future<void> _ensureFramework() async {
@@ -70,52 +82,85 @@ class AiEngine {
     required AiModelInfo model,
     required String systemInstruction,
     required List<Tool> tools,
-  }) async {
-    if (isLoaded) return;
-    await _ensureFramework();
+  }) {
+    return _serial(() async {
+      if (isLoaded) return;
+      await _ensureFramework();
 
-    // 1024 tokens halves the KV-cache vs 2048 — the prompt + tool JSON +
-    // a tool-call reply use ~600, so this fits with headroom. Budget 4 GB
-    // phones OOM-crashed natively on first load with the larger context.
-    // CPU explicitly: XNNPACK is the stable path on low-end devices and
-    // skips the NPU/GPU dispatch probing.
-    _model = await FlutterGemma.getActiveModel(
-      maxTokens: 1024,
-      preferredBackend: PreferredBackend.cpu,
-    );
-    _chat = await _model!.createChat(
-      // Slot filling wants determinism, not creativity.
-      temperature: 0.1,
-      tokenBuffer: 256,
-      tools: tools,
-      supportsFunctionCalls: true,
-      modelType: model.modelType,
-      systemInstruction: systemInstruction,
-    );
+      // 1024 tokens halves the KV-cache vs 2048 — the prompt + tool JSON +
+      // a tool-call reply use ~600, so this fits with headroom. Budget 4 GB
+      // phones OOM-crashed natively on first load with the larger context.
+      // CPU explicitly: XNNPACK is the stable path on low-end devices and
+      // skips the NPU/GPU dispatch probing.
+      _model = await FlutterGemma.getActiveModel(
+        maxTokens: 1024,
+        preferredBackend: PreferredBackend.cpu,
+      );
+      _chat = await _model!.createChat(
+        // Slot filling wants determinism, not creativity.
+        temperature: 0.1,
+        tokenBuffer: 256,
+        tools: tools,
+        supportsFunctionCalls: true,
+        modelType: model.modelType,
+        systemInstruction: systemInstruction,
+      );
+    });
   }
 
-  /// Sends the user text and returns the model's full response
-  /// (a [FunctionCallResponse] when it picked the tool, else text).
-  Future<ModelResponse> ask(String text) async {
-    final chat = _chat;
-    if (chat == null) throw StateError('AiEngine not loaded');
+  /// Sends the user text and returns the model's response (a
+  /// [FunctionCallResponse] when it picked the tool, else the full text).
+  ///
+  /// Uses the streaming generate API: it's the only one in flutter_gemma
+  /// 0.16 with context-window management — the sync variant never trims,
+  /// so at 1024 tokens the session overflowed after a handful of questions
+  /// and silently degraded to the fallback parser for the rest of the
+  /// session.
+  Future<ModelResponse> ask(String text) {
+    return _serial(() async {
+      final chat = _chat;
+      if (chat == null) throw StateError('AiEngine not loaded');
 
-    await chat.addQuery(Message.text(text: text, isUser: true));
-    return chat.generateChatResponse();
+      await chat.addQuery(Message.text(text: text, isUser: true));
+
+      FunctionCallResponse? call;
+      final buffer = StringBuffer();
+      await for (final event in chat.generateChatResponseAsync()) {
+        switch (event) {
+          case FunctionCallResponse f:
+            call ??= f;
+          case ParallelFunctionCallResponse p:
+            if (p.calls.isNotEmpty) call ??= p.calls.first;
+          case TextResponse t:
+            buffer.write(t.token);
+          case ThinkingResponse _:
+            break;
+        }
+      }
+      return call ?? TextResponse(buffer.toString());
+    });
   }
 
-  /// Frees model memory (app backgrounded / left the AI tab).
-  Future<void> unload() async {
-    await _model?.close();
-    _model = null;
-    _chat = null;
+  /// Frees model memory (app backgrounded / left the AI tab). Queued
+  /// behind any in-flight load/ask so it can never miss a model that's
+  /// still being created or close a session mid-inference.
+  Future<void> unload() {
+    return _serial(() async {
+      await _model?.close();
+      _model = null;
+      _chat = null;
+    });
   }
 
-  Future<void> deleteModel() async {
-    await unload();
-    await _ensureFramework();
-    final manager = FlutterGemmaPlugin.instance.modelManager;
-    final spec = manager.activeInferenceModel;
-    if (spec != null) await manager.deleteModel(spec);
+  Future<void> deleteModel() {
+    return _serial(() async {
+      await _model?.close();
+      _model = null;
+      _chat = null;
+      await _ensureFramework();
+      final manager = FlutterGemmaPlugin.instance.modelManager;
+      final spec = manager.activeInferenceModel;
+      if (spec != null) await manager.deleteModel(spec);
+    });
   }
 }

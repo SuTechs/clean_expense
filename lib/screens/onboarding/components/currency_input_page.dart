@@ -131,9 +131,14 @@ class _CurrencyInputPageState extends State<CurrencyInputPage> {
                     vertical: 12,
                   ),
                 ),
-                onChanged: (value) {
-                  final trimmed = value.trim();
-                  if (trimmed.isNotEmpty) appBloc.currency = trimmed;
+                // Applied on done/focus-loss, not per keystroke: typing
+                // "C" of "CHF" and swiping away used to persist "C" as
+                // the currency with no way back to the old symbol.
+                onSubmitted: (_) => _applyCustom(appBloc),
+                onEditingComplete: () => _applyCustom(appBloc),
+                onTapOutside: (_) {
+                  _applyCustom(appBloc);
+                  FocusScope.of(context).unfocus();
                 },
               ),
             ),
@@ -141,6 +146,13 @@ class _CurrencyInputPageState extends State<CurrencyInputPage> {
         ),
       ),
     );
+  }
+
+  void _applyCustom(AppBloc appBloc) {
+    final value = _customController.text.trim();
+    if (value.isNotEmpty && value != appBloc.currency) {
+      appBloc.currency = value;
+    }
   }
 
   Widget _symbolChip(AppBloc appBloc, String symbol, {required bool selected}) {

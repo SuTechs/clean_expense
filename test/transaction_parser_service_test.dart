@@ -57,6 +57,10 @@ void main() {
         ('2 burgers', 'food', 500.0),
         ('', 'salary', 50000.0),
         ('uber to airport', 'transport', 349.5),
+        // Note containing a hashtag: category must still round-trip
+        // (regression: saving an untouched edit used to flip the category
+        // to the note's tag).
+        ('Lunch #work', 'food', 150.0),
       ];
 
       for (final (note, category, amount) in cases) {

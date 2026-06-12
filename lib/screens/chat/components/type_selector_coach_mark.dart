@@ -131,11 +131,14 @@ class _TypeSelectorCoachMarkState extends State<TypeSelectorCoachMark>
 
     return Stack(
       children: [
-        // Transparent barrier — any tap dismisses the hint.
+        // Pass-through barrier: a Listener observes the pointer without
+        // entering the gesture arena, so the user's first tap BOTH
+        // dismisses the hint and still reaches whatever they tapped
+        // (an opaque barrier used to swallow it).
         Positioned.fill(
-          child: GestureDetector(
-            onTap: widget.onDismiss,
-            behavior: HitTestBehavior.opaque,
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (_) => widget.onDismiss(),
             child: const SizedBox.expand(),
           ),
         ),

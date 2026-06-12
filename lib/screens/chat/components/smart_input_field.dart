@@ -41,6 +41,10 @@ class _SmartInputFieldState extends State<SmartInputField>
   /// only re-prefills when edit mode starts/changes (not on every rebuild).
   String? _lastEditingId;
 
+  /// Draft typed before an edit started, restored when the edit ends so
+  /// long-pressing a bubble doesn't destroy a half-typed expense.
+  String? _draftBeforeEdit;
+
   // First-use hint pointing at the type selector.
   final LayerLink _typeSelectorLink = LayerLink();
   OverlayEntry? _coachMarkEntry;
@@ -194,6 +198,7 @@ class _SmartInputFieldState extends State<SmartInputField>
       if (!mounted) return;
 
       if (editing != null) {
+        _draftBeforeEdit ??= _controller.text;
         final text = TransactionParserService().reconstruct(
           note: editing.note,
           category: editing.category,
@@ -210,7 +215,10 @@ class _SmartInputFieldState extends State<SmartInputField>
         });
         _focusNode.requestFocus();
       } else {
-        _controller.clear();
+        // Edit ended (sent or cancelled): bring back whatever the user
+        // had typed before the edit hijacked the field.
+        _controller.text = _draftBeforeEdit ?? '';
+        _draftBeforeEdit = null;
         setState(() => _categoryFilter = null);
       }
     });

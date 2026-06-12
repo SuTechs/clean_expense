@@ -26,14 +26,20 @@ class CsvExporter {
   }
 
   /// Quotes a field when it contains a comma, quote or line break and
-  /// doubles any inner quotes (RFC 4180).
+  /// doubles any inner quotes (RFC 4180). Fields starting with a formula
+  /// trigger (= + - @ tab) are prefixed with a quote character so Excel/
+  /// Sheets render them as text instead of executing them (CSV injection).
   static String _escape(String field) {
-    if (field.contains(',') ||
-        field.contains('"') ||
-        field.contains('\n') ||
-        field.contains('\r')) {
-      return '"${field.replaceAll('"', '""')}"';
+    var value = field;
+    if (value.isNotEmpty && '=+-@\t\r'.contains(value[0])) {
+      value = "'$value";
     }
-    return field;
+    if (value.contains(',') ||
+        value.contains('"') ||
+        value.contains('\n') ||
+        value.contains('\r')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
   }
 }

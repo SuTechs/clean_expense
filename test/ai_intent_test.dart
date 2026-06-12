@@ -229,6 +229,24 @@ void main() {
       );
       expect(count!.metric, AiMetric.transactionCount);
     });
+
+    test('listing/counting questions detect the type filter', () {
+      // "income transactions" must list income, not sum it (the income
+      // metric check used to win over the transactions check).
+      final incomeList = IntentFallbackParser.parse(
+        'show my income transactions this month',
+        categories: _categories,
+      );
+      expect(incomeList!.metric, AiMetric.listTransactions);
+      expect(incomeList.type, TransactionType.incoming);
+
+      final investCount = IntentFallbackParser.parse(
+        'how many investments did I count this year',
+        categories: _categories,
+      );
+      expect(investCount!.metric, AiMetric.transactionCount);
+      expect(investCount.type, TransactionType.invested);
+    });
   });
 
   group('listTransactions execution', () {

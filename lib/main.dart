@@ -47,13 +47,22 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   /// Flush pending backups and free AI model memory when the app goes to
   /// background; pull remote changes when it comes back.
-  late final AppLifecycleListener _lifecycleListener = AppLifecycleListener(
-    onPause: () {
-      SyncCommand().flushPending();
-      AiModelCommand().unload();
-    },
-    onResume: () => SyncCommand().syncOnResume(),
-  );
+  // Constructed eagerly in initState: a lazy `late final` field initializer
+  // only runs on first read, which used to be dispose() — meaning the
+  // listener never existed while the app ran.
+  late final AppLifecycleListener _lifecycleListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycleListener = AppLifecycleListener(
+      onPause: () {
+        SyncCommand().flushPending();
+        AiModelCommand().unload();
+      },
+      onResume: () => SyncCommand().syncOnResume(),
+    );
+  }
 
   @override
   void dispose() {

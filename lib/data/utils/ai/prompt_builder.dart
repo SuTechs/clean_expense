@@ -48,6 +48,13 @@ class AiPromptBuilder {
             'description':
                 '0 = current period, -1 = previous (e.g. last month)',
           },
+          'type': {
+            'type': 'string',
+            'enum': ['outgoing', 'incoming', 'invested'],
+            'description':
+                'Optional filter: outgoing=expenses, incoming=income, '
+                'invested=investments',
+          },
           'category': {
             'type': 'string',
             'description': 'Optional category filter, e.g. food',

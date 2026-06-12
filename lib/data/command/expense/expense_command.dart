@@ -73,6 +73,49 @@ class ExpenseCommand extends BaseAppCommand {
     }
   }
 
+  /// Renames a category across all transactions, persisting each change
+  /// with a fresh updatedAt stamp. The bloc-only version of this lost the
+  /// rename on restart and the next sync merge reverted it in the UI.
+  Future<void> renameCategory(String oldName, String newName) async {
+    final affected = expenseBloc.expenses
+        .where((e) => e.category == oldName)
+        .toList();
+    if (affected.isEmpty) return;
+
+    final now = TimeUtils.nowMillis;
+    for (final e in affected) {
+      final updated = e.copyWith(category: newName, updatedAt: now);
+      expenseBloc.updateExpense(updated);
+      await hive.updateExpense(updated);
+    }
+    SyncCommand().scheduleBackup();
+  }
+
+  /// Deletes a category: permanently removes its transactions (with
+  /// tombstones so other devices don't resurrect them) or, with
+  /// [deleteTransactions] false, relabels them as "deleted".
+  Future<void> deleteCategory(
+    String name, {
+    required bool deleteTransactions,
+  }) async {
+    if (!deleteTransactions) {
+      await renameCategory(name, 'deleted');
+      return;
+    }
+
+    final affected = expenseBloc.expenses
+        .where((e) => e.category == name)
+        .toList();
+    if (affected.isEmpty) return;
+
+    for (final e in affected) {
+      expenseBloc.deleteExpense(e.id);
+      await hive.deleteExpense(e.id);
+      await SyncCommand().recordTombstone(e.id);
+    }
+    SyncCommand().scheduleBackup();
+  }
+
   /// update expense
   Future<void> updateExpense(ExpenseData expense) async {
     // Stamp for per-record merge during Drive sync.

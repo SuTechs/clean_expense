@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/bloc/expense_bloc.dart';
-import '../../data/command/commands.dart';
+import '../../data/command/expense/expense_command.dart';
 import '../../data/data/expense/expense.dart';
 import '../../theme.dart';
 
@@ -218,10 +218,7 @@ class ManageCategoryScreen extends StatelessWidget {
                 onPressed: () {
                   final newName = controller.text.trim().toLowerCase();
                   if (newName.isNotEmpty && newName != currentName) {
-                    BaseAppCommand.blocExpense.renameCategory(
-                      currentName,
-                      newName,
-                    );
+                    ExpenseCommand().renameCategory(currentName, newName);
                   }
                   Navigator.pop(context);
                 },
@@ -268,7 +265,7 @@ class ManageCategoryScreen extends StatelessWidget {
               // Keep Data Button
               OutlinedButton(
                 onPressed: () {
-                  BaseAppCommand.blocExpense.deleteCategory(
+                  ExpenseCommand().deleteCategory(
                     categoryName,
                     deleteTransactions: false,
                   );
@@ -290,7 +287,7 @@ class ManageCategoryScreen extends StatelessWidget {
               // Delete All Button
               ElevatedButton(
                 onPressed: () {
-                  BaseAppCommand.blocExpense.deleteCategory(
+                  ExpenseCommand().deleteCategory(
                     categoryName,
                     deleteTransactions: true,
                   );

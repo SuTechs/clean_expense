@@ -81,11 +81,10 @@ class AiIntent {
     final period =
         _periodNames[args['period']?.toString().toLowerCase()] ?? 'M';
 
-    final rawOffset = args['date_offset'];
-    final dateOffset = (rawOffset is num ? rawOffset.toInt() : 0).clamp(
-      -24,
-      0,
-    );
+    // Small models routinely quote JSON numbers ("date_offset": "-1");
+    // treating those as 0 answered "last month" with this month's data,
+    // confidently and invisibly.
+    final dateOffset = _asInt(args['date_offset'], fallback: 0).clamp(-24, 0);
 
     TransactionType? type;
     switch (args['type']?.toString().toLowerCase()) {
@@ -97,8 +96,7 @@ class AiIntent {
         type = TransactionType.invested;
     }
 
-    final rawTopN = args['top_n'];
-    final topN = (rawTopN is num ? rawTopN.toInt() : 5).clamp(1, 10);
+    final topN = _asInt(args['top_n'], fallback: 5).clamp(1, 10);
 
     return AiIntent(
       metric: metric,
@@ -111,6 +109,12 @@ class AiIntent {
       ),
       topN: topN,
     );
+  }
+
+  static int _asInt(dynamic raw, {required int fallback}) {
+    if (raw is num) return raw.toInt();
+    if (raw is String) return int.tryParse(raw.trim()) ?? fallback;
+    return fallback;
   }
 
   /// Fuzzy-matches a model-provided category against the user's actual

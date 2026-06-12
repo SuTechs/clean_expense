@@ -40,7 +40,13 @@ class AiBloc extends AbstractBloc {
     _downloadProgress = percent;
   });
 
-  void addMessage(AiMessage message) => notify(() => _messages.add(message));
+  /// Keeps the in-memory history bounded for long sessions.
+  static const _maxMessages = 100;
+
+  void addMessage(AiMessage message) => notify(() {
+    _messages.add(message);
+    if (_messages.length > _maxMessages) _messages.removeAt(0);
+  });
 
   void updateMessage(String id, AiMessage Function(AiMessage) transform) {
     final index = _messages.indexWhere((m) => m.id == id);
