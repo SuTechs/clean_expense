@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Needed in release builds (debug gets it implicitly) for Google
+         Drive backup, AI model download and in-app update checks. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="Clean Expense"
         android:name="${applicationName}"
