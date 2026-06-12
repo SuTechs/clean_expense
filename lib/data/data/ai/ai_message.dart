@@ -2,7 +2,7 @@ enum AiMessageRole { user, assistant }
 
 enum AiMessageStatus { pending, done, error }
 
-enum AiWidgetType { statCard, pie, bar, line }
+enum AiWidgetType { statCard, pie, bar, line, transactionList }
 
 class AiChartSegment {
   final String label;
@@ -13,6 +13,23 @@ class AiChartSegment {
     required this.label,
     required this.value,
     required this.percent,
+  });
+}
+
+/// One row of a transaction-list widget, pre-formatted by the executor.
+class AiTransactionRow {
+  final String title;
+  final String subtitle;
+
+  /// Pre-signed, pre-formatted amount, e.g. "-₹500" / "+₹50,000".
+  final String amount;
+  final bool isIncome;
+
+  const AiTransactionRow({
+    required this.title,
+    required this.subtitle,
+    required this.amount,
+    required this.isIncome,
   });
 }
 
@@ -33,6 +50,9 @@ class AiWidgetSpec {
   final List<String>? labels;
   final List<double>? values;
 
+  // transactionList
+  final List<AiTransactionRow>? rows;
+
   const AiWidgetSpec.statCard({
     required this.title,
     required String this.value,
@@ -40,7 +60,8 @@ class AiWidgetSpec {
   }) : type = AiWidgetType.statCard,
        segments = null,
        labels = null,
-       values = null;
+       values = null,
+       rows = null;
 
   const AiWidgetSpec.pie({
     required this.title,
@@ -49,7 +70,8 @@ class AiWidgetSpec {
        value = null,
        subtitle = null,
        labels = null,
-       values = null;
+       values = null,
+       rows = null;
 
   const AiWidgetSpec.bar({
     required this.title,
@@ -58,7 +80,8 @@ class AiWidgetSpec {
   }) : type = AiWidgetType.bar,
        value = null,
        subtitle = null,
-       segments = null;
+       segments = null,
+       rows = null;
 
   const AiWidgetSpec.line({
     required this.title,
@@ -67,7 +90,18 @@ class AiWidgetSpec {
   }) : type = AiWidgetType.line,
        value = null,
        subtitle = null,
-       segments = null;
+       segments = null,
+       rows = null;
+
+  const AiWidgetSpec.transactionList({
+    required this.title,
+    required List<AiTransactionRow> this.rows,
+  }) : type = AiWidgetType.transactionList,
+       value = null,
+       subtitle = null,
+       segments = null,
+       labels = null,
+       values = null;
 }
 
 class AiMessage {

@@ -51,6 +51,11 @@ class IntentFallbackParser {
     if (has(RegExp(r'how many|count|number of'))) {
       return AiMetric.transactionCount;
     }
+    // "give/show/list ... transactions", "what did I buy" (after the count
+    // check so "how many transactions" stays a count).
+    if (has(RegExp(r'transactions?|purchases|what did i buy|list my'))) {
+      return AiMetric.listTransactions;
+    }
     if (has(RegExp(r'frequent|most often'))) {
       return AiMetric.mostFrequentCategory;
     }

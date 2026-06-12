@@ -203,5 +203,80 @@ void main() {
         isNull,
       );
     });
+
+    test('parses transaction listing questions', () {
+      final today = IntentFallbackParser.parse(
+        "give me today's transactions",
+        categories: _categories,
+      );
+      expect(today!.metric, AiMetric.listTransactions);
+      expect(today.period, 'D');
+      expect(today.dateOffset, 0);
+
+      final yesterdayFood = IntentFallbackParser.parse(
+        "give me yesterday's food transactions",
+        categories: _categories,
+      );
+      expect(yesterdayFood!.metric, AiMetric.listTransactions);
+      expect(yesterdayFood.period, 'D');
+      expect(yesterdayFood.dateOffset, -1);
+      expect(yesterdayFood.category, 'food');
+
+      // "how many transactions" must stay a count, not a listing.
+      final count = IntentFallbackParser.parse(
+        'how many transactions this month',
+        categories: _categories,
+      );
+      expect(count!.metric, AiMetric.transactionCount);
+    });
+  });
+
+  group('listTransactions execution', () {
+    test('lists this month with rows and spent total', () {
+      final answer = IntentExecutor(
+        expenses: _fixture(),
+        currency: '₹',
+        now: _now,
+      ).execute(
+        const AiIntent(metric: AiMetric.listTransactions, period: 'M'),
+      );
+
+      expect(answer.widget!.type, AiWidgetType.transactionList);
+      final rows = answer.widget!.rows!;
+      expect(rows, isNotEmpty);
+      // Newest first.
+      expect(answer.text, contains('transaction'));
+      expect(rows.first.amount, isNotEmpty);
+    });
+
+    test('filters by category and reports empty periods honestly', () {
+      final executor = IntentExecutor(
+        expenses: _fixture(),
+        currency: '₹',
+        now: _now,
+      );
+
+      final food = executor.execute(
+        const AiIntent(
+          metric: AiMetric.listTransactions,
+          period: 'M',
+          category: 'food',
+        ),
+      );
+      expect(food.widget!.rows!.length, 2);
+      expect(food.widget!.rows!.every((r) => r.subtitle.contains('#food')),
+          isTrue);
+
+      final empty = executor.execute(
+        const AiIntent(
+          metric: AiMetric.listTransactions,
+          period: 'D',
+          dateOffset: -1,
+          category: 'rent',
+        ),
+      );
+      expect(empty.widget, isNull);
+      expect(empty.text, contains('No transactions'));
+    });
   });
 }

@@ -18,6 +18,7 @@ enum AiMetric {
   dayOfWeek,
   projection,
   transactionCount,
+  listTransactions,
 }
 
 class AiIntent {
@@ -56,6 +57,7 @@ class AiIntent {
     'day_of_week': AiMetric.dayOfWeek,
     'projection': AiMetric.projection,
     'transaction_count': AiMetric.transactionCount,
+    'list_transactions': AiMetric.listTransactions,
   };
 
   static const _periodNames = {

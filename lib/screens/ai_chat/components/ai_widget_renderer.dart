@@ -48,9 +48,70 @@ class AiWidgetRenderer extends StatelessWidget {
             AiWidgetType.pie => _Pie(spec: spec),
             AiWidgetType.bar => _Bar(spec: spec),
             AiWidgetType.line => _Line(spec: spec),
+            AiWidgetType.transactionList => _TransactionList(spec: spec),
           },
         ],
       ),
+    );
+  }
+}
+
+class _TransactionList extends StatelessWidget {
+  final AiWidgetSpec spec;
+  const _TransactionList({required this.spec});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = spec.rows ?? const [];
+
+    return Column(
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0)
+            const Divider(height: 12, color: AppTheme.dividerColor),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      rows[i].title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      rows[i].subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                rows[i].amount,
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: rows[i].isIncome
+                      ? AppTheme.primaryGreen
+                      : AppTheme.primaryNavy,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }

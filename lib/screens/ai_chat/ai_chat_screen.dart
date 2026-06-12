@@ -29,6 +29,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   static const _suggestions = [
     "What did I spend this month?",
     "Where am I spending most?",
+    "Show today's transactions",
     "My biggest expense this month",
     "What's my savings rate this year?",
     "Spending trend this month",

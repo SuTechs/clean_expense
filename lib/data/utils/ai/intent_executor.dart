@@ -268,6 +268,80 @@ class IntentExecutor {
             subtitle: _titleCase(when),
           ),
         );
+
+      case AiMetric.listTransactions:
+        final matches =
+            filtered
+                .where(
+                  (e) =>
+                      _inPeriod(e.date, intent.period, reference) &&
+                      (intent.type == null || e.type == intent.type),
+                )
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
+
+        if (matches.isEmpty) {
+          return AiAnswer(text: "No transactions recorded$inCategory $when.");
+        }
+
+        const maxRows = 10;
+        final shown = matches.take(maxRows).toList();
+        final spent = matches
+            .where((e) => e.type == TransactionType.outgoing)
+            .fold(0.0, (sum, e) => sum + e.amount);
+        final spentPart = spent == 0 ? "" : " (${_money(spent)} spent)";
+        final morePart = matches.length > maxRows
+            ? " Showing the latest $maxRows."
+            : "";
+
+        return AiAnswer(
+          text:
+              "You have ${matches.length} transaction"
+              "${matches.length == 1 ? '' : 's'}$inCategory $when"
+              "$spentPart.$morePart",
+          widget: AiWidgetSpec.transactionList(
+            title: 'Transactions$inCategory · ${_titleCase(when)}',
+            rows: [
+              for (final e in shown)
+                AiTransactionRow(
+                  title: e.note.isEmpty ? '#${e.category}' : e.note,
+                  subtitle:
+                      '#${e.category} · ${DateFormat('MMM d, h:mm a').format(e.date)}',
+                  amount: switch (e.type) {
+                    TransactionType.incoming => '+${_money(e.amount)}',
+                    TransactionType.outgoing => '-${_money(e.amount)}',
+                    TransactionType.invested => _money(e.amount),
+                  },
+                  isIncome: e.type == TransactionType.incoming,
+                ),
+            ],
+          ),
+        );
+    }
+  }
+
+  /// Whether [date] falls in the same period window as [reference] —
+  /// mirrors StatisticsHelper's filtering for raw-transaction listing.
+  bool _inPeriod(DateTime date, String period, DateTime reference) {
+    switch (period) {
+      case 'D':
+        return date.year == reference.year &&
+            date.month == reference.month &&
+            date.day == reference.day;
+      case 'W':
+        final start = DateTime(
+          reference.year,
+          reference.month,
+          reference.day,
+        ).subtract(Duration(days: reference.weekday - 1));
+        final end = start.add(const Duration(days: 7));
+        return !date.isBefore(start) && date.isBefore(end);
+      case 'M':
+        return date.year == reference.year && date.month == reference.month;
+      case 'Y':
+        return date.year == reference.year;
+      default:
+        return true;
     }
   }
 

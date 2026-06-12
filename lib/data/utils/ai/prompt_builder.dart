@@ -35,6 +35,7 @@ class AiPromptBuilder {
               'day_of_week',
               'projection',
               'transaction_count',
+              'list_transactions',
             ],
           },
           'period': {
@@ -77,6 +78,8 @@ Examples:
 - "what did I spend this month" -> query_stats(metric=total_spending, period=M)
 - "biggest expense last month on food" -> query_stats(metric=largest_expense, period=M, date_offset=-1, category=food)
 - "where am I spending most" -> query_stats(metric=top_category, period=M)
+- "show today's transactions" -> query_stats(metric=list_transactions, period=D)
+- "yesterday's food transactions" -> query_stats(metric=list_transactions, period=D, date_offset=-1, category=food)
 If the question is not about their finances, reply in one short sentence and
 suggest a finance question.''';
   }
