@@ -53,6 +53,11 @@ android {
 
         release {
             signingConfig = signingConfigs.getByName("release")
+            // MediaPipe/LiteRT need keep rules or R8 fails the build.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
 
         debug {
