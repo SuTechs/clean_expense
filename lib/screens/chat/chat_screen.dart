@@ -1,10 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/bloc/app_bloc.dart';
+import '../../data/bloc/expense_bloc.dart';
 import '../../data/command/expense/expense_command.dart';
 import '../../data/data/expense/expense.dart';
 import 'components/glass_app_bar.dart';
@@ -191,7 +191,24 @@ class _ChatScreenState extends State<ChatScreen> {
                                     key: const ValueKey('selection'),
                                     theme: theme,
                                     onClose: _interaction.clearSelection,
-                                    onEdit: _interaction.startEditing,
+                                    onEdit: () {
+                                      // The selection can outlive its
+                                      // expense for a moment (delete being
+                                      // persisted, sync merge): editing a
+                                      // gone record would resurrect it.
+                                      final selected = _interaction.selected;
+                                      final exists =
+                                          selected != null &&
+                                          context
+                                              .read<ExpenseBloc>()
+                                              .expenses
+                                              .any((e) => e.id == selected.id);
+                                      if (exists) {
+                                        _interaction.startEditing();
+                                      } else {
+                                        _interaction.clearSelection();
+                                      }
+                                    },
                                     onDelete: _deleteSelected,
                                   )
                                 : GlassAppBar(
@@ -210,9 +227,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
                               slivers: const [
                                 TransactionList(),
-                                SliverPadding(
-                                  padding: EdgeInsets.only(top: 8),
-                                ),
+                                SliverPadding(padding: EdgeInsets.only(top: 8)),
                               ],
                             ),
                           ),

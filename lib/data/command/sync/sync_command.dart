@@ -33,6 +33,19 @@ class SyncCommand extends BaseAppCommand {
   /// on-pause flush a no-op exactly when a sync was already running).
   static Future<void>? _inFlight;
 
+  /// Mutual exclusion for everything that touches the backup: background
+  /// syncs, connect and restore. Without it, a lifecycle-triggered sync
+  /// (e.g. onPause while the sign-in sheet is up) could interleave its
+  /// merge+upload with restore's remote-wins replace and resurrect the
+  /// exact data the user asked to discard.
+  static Future<void> _gate = Future.value();
+
+  static Future<T> _exclusive<T>(Future<T> Function() op) {
+    final result = _gate.then((_) => op());
+    _gate = result.then((_) {}, onError: (_) {});
+    return result;
+  }
+
   /// Bumped on every local change. The sync snapshots it before reading
   /// Hive and only clears the dirty flag if nothing changed during the
   /// (potentially slow) upload — otherwise that change would never be
@@ -60,7 +73,9 @@ class SyncCommand extends BaseAppCommand {
   /// account directly (a second silent sign-in here can re-invoke
   /// Credential Manager and hang). The merge inside doubles as the restore
   /// for fresh installs. Throws on any failure, including cancel.
-  Future<void> connect() async {
+  Future<void> connect() => _exclusive(_connect);
+
+  Future<void> _connect() async {
     syncBloc.setSyncing();
     http.Client? client;
     try {
@@ -168,7 +183,7 @@ class SyncCommand extends BaseAppCommand {
     final existing = _inFlight;
     if (existing != null) return existing;
 
-    final run = _runSync().whenComplete(() => _inFlight = null);
+    final run = _exclusive(_runSync).whenComplete(() => _inFlight = null);
     _inFlight = run;
     return run;
   }
@@ -206,11 +221,11 @@ class SyncCommand extends BaseAppCommand {
   /// Returns false when no backup exists. Any failure (including cancelled
   /// sign-in) restores the bloc state — leaving it stuck in `syncing` would
   /// make the status guard silently disable all future syncs.
-  Future<bool> restoreNow() async {
-    // Don't interleave a remote-wins replace with an in-flight merge.
-    final inFlight = _inFlight;
-    if (inFlight != null) await inFlight;
+  /// Holds the sync gate for its whole duration so a lifecycle-triggered
+  /// merge can't interleave with the remote-wins replace.
+  Future<bool> restoreNow() => _exclusive(_restoreNow);
 
+  Future<bool> _restoreNow() async {
     http.Client? client;
     try {
       syncBloc.setSyncing();

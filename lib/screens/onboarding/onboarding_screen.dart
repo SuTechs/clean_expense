@@ -84,10 +84,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       // Without the reset, one failed write makes every later Get
       // Started/Skip tap a silent no-op for the rest of the session.
       _completing = false;
+      debugPrint('OnboardingScreen._finish: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Couldn't finish setup: $e"),
+          const SnackBar(
+            content: Text("Something went wrong, please try again."),
             behavior: SnackBarBehavior.floating,
           ),
         );

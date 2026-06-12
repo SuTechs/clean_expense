@@ -83,12 +83,21 @@ class ExpenseCommand extends BaseAppCommand {
     if (affected.isEmpty) return;
 
     final now = TimeUtils.nowMillis;
-    for (final e in affected) {
-      final updated = e.copyWith(category: newName, updatedAt: now);
-      expenseBloc.updateExpense(updated);
-      await hive.updateExpense(updated);
+    try {
+      for (final e in affected) {
+        final updated = e.copyWith(category: newName, updatedAt: now);
+        expenseBloc.updateExpense(updated);
+        await hive.updateExpense(updated);
+      }
+    } catch (e) {
+      // Mid-loop failure: resync the bloc with what actually persisted
+      // instead of leaving it half-renamed in memory only.
+      expenseBloc.refresh(hive.getAllExpenses());
+      debugPrint("Error renaming category: $e");
+      rethrow;
+    } finally {
+      SyncCommand().scheduleBackup();
     }
-    SyncCommand().scheduleBackup();
   }
 
   /// Deletes a category: permanently removes its transactions (with
@@ -108,12 +117,19 @@ class ExpenseCommand extends BaseAppCommand {
         .toList();
     if (affected.isEmpty) return;
 
-    for (final e in affected) {
-      expenseBloc.deleteExpense(e.id);
-      await hive.deleteExpense(e.id);
-      await SyncCommand().recordTombstone(e.id);
+    try {
+      for (final e in affected) {
+        expenseBloc.deleteExpense(e.id);
+        await hive.deleteExpense(e.id);
+        await SyncCommand().recordTombstone(e.id);
+      }
+    } catch (e) {
+      expenseBloc.refresh(hive.getAllExpenses());
+      debugPrint("Error deleting category: $e");
+      rethrow;
+    } finally {
+      SyncCommand().scheduleBackup();
     }
-    SyncCommand().scheduleBackup();
   }
 
   /// update expense

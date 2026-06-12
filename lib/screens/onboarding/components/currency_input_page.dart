@@ -131,15 +131,15 @@ class _CurrencyInputPageState extends State<CurrencyInputPage> {
                     vertical: 12,
                   ),
                 ),
-                // Applied on done/focus-loss, not per keystroke: typing
-                // "C" of "CHF" and swiping away used to persist "C" as
-                // the currency with no way back to the old symbol.
+                // Applied only on an explicit Done: per-keystroke (and even
+                // focus-loss) commits persisted fragments like the "C" of
+                // "CHF" when the user swipes away mid-typing.
                 onSubmitted: (_) => _applyCustom(appBloc),
-                onEditingComplete: () => _applyCustom(appBloc),
-                onTapOutside: (_) {
+                onEditingComplete: () {
                   _applyCustom(appBloc);
                   FocusScope.of(context).unfocus();
                 },
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
               ),
             ),
           ],

@@ -38,6 +38,9 @@ class IntentFallbackParser {
     if (has(RegExp(r'breakdown|by category|split'))) {
       return AiMetric.categoryBreakdown;
     }
+    // Day-of-week before the listing check: "which day do I make the most
+    // purchases" is a weekday question, not a listing.
+    if (has(RegExp(r'which day|what day|weekday'))) return AiMetric.dayOfWeek;
     // Counting/listing checks come BEFORE the income/invest/saved metrics so
     // "income transactions" lists income instead of summing it.
     if (has(RegExp(r'how many|count|number of'))) {
@@ -56,7 +59,6 @@ class IntentFallbackParser {
     if (has(RegExp(r'trend|over time|chart|graph'))) {
       return AiMetric.spendingTrend;
     }
-    if (has(RegExp(r'which day|what day|weekday'))) return AiMetric.dayOfWeek;
     if (has(RegExp(r'project|on track|forecast'))) return AiMetric.projection;
     if (has(RegExp(r'frequent|most often'))) {
       return AiMetric.mostFrequentCategory;
