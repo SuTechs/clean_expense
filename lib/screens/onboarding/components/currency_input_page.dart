@@ -66,7 +66,7 @@ class _CurrencyInputPageState extends State<CurrencyInputPage> {
             ),
             const SizedBox(height: 12),
             const Text(
-              "Choose a symbol or type your own — you can change it anytime "
+              "Choose a symbol or type your own. You can change it anytime "
               "in Settings.",
               textAlign: TextAlign.center,
               style: TextStyle(

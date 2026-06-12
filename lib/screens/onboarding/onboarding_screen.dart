@@ -10,9 +10,10 @@ import 'components/onboarding_page.dart';
 import 'components/type_selector_demo.dart';
 import 'components/typing_demo.dart';
 
-/// Hook for a future "Restore from Google Drive" flow. Returns true when a
-/// backup was restored (onboarding then completes immediately). When null,
-/// the final page shows a disabled "coming soon" row.
+/// Hook for the "Enable Google Drive backup" flow on the final page.
+/// Returns true on success (onboarding then completes immediately), false
+/// when the user cancelled sign-in, and throws with a readable message on
+/// failure. When null, the row renders disabled.
 typedef RestoreBackupHandler = Future<bool> Function(BuildContext context);
 
 /// First-launch onboarding: value prop, how-to demo, transaction types,
@@ -37,6 +38,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
   int _maxVisitedPage = 0;
   bool _completing = false;
+
+  bool _connectingDrive = false;
+  String? _driveError;
 
   bool get _isLastPage => _currentPage == _pageCount - 1;
 
@@ -76,12 +80,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Future<void> _handleRestore() async {
+  Future<void> _handleEnableDriveSync() async {
     final handler = widget.onRestoreBackup;
-    if (handler == null) return;
+    if (handler == null || _connectingDrive) return;
 
-    final restored = await handler(context);
-    if (restored && mounted) _finish();
+    setState(() {
+      _connectingDrive = true;
+      _driveError = null;
+    });
+
+    try {
+      final connected = await handler(context);
+      // Sync is on and any existing backup is already merged in — done.
+      if (connected && mounted) _finish();
+    } catch (e) {
+      if (mounted) setState(() => _driveError = '$e');
+    } finally {
+      if (mounted) setState(() => _connectingDrive = false);
+    }
   }
 
   @override
@@ -143,7 +159,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         illustration: TypingDemo(),
                         title: "Add expenses like a chat",
                         subtitle:
-                            "Type a note, a #category and an amount — "
+                            "Type a note, a #category and an amount "
                             "in any order. That's it.",
                       ),
                       const OnboardingPage(
@@ -158,7 +174,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         title: "Your money, ask it anything",
                         subtitle:
                             "A built-in AI assistant that runs entirely on "
-                            "your phone — private, offline and free.",
+                            "your phone. Private, offline and free.",
                       ),
                       NameInputPage(
                         controller: _nameController,
@@ -235,7 +251,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildFinishPage() {
-    final hasRestore = widget.onRestoreBackup != null;
+    final hasDriveSync = widget.onRestoreBackup != null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -269,7 +285,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            "Your data stays on your device — private and free forever.",
+            "Your data stays on your device. Private and free forever.",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
@@ -278,23 +294,96 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: hasRestore ? _handleRestore : null,
-            icon: const Icon(Icons.cloud_download_outlined, size: 18),
-            label: Text(
-              hasRestore
-                  ? "Restore from Google Drive"
-                  : "Restore from backup — coming soon",
+          if (hasDriveSync) _buildDriveSyncCard(),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  /// Sells the free Drive backup to new users; the merge it runs doubles as
+  /// the restore for returning ones.
+  Widget _buildDriveSyncCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.dividerColor),
+      ),
+      child: Column(
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.cloud_done_outlined,
+                size: 22,
+                color: AppTheme.accentBlue,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "Free Google Drive backup",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Backs up automatically to your own Drive. Used Clean Expense "
+            "before? Your data is restored too.",
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: AppTheme.textSecondary,
             ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.primaryNavy,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          ),
+          if (_driveError != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _driveError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.dangerRed,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _connectingDrive ? null : _handleEnableDriveSync,
+              icon: _connectingDrive
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_sync_outlined, size: 18),
+              label: Text(
+                _connectingDrive
+                    ? "Connecting…"
+                    : "Enable Drive backup & restore",
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primaryNavy,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 48),
         ],
       ),
     );

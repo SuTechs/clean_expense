@@ -112,7 +112,7 @@ class IntentExecutor {
         final rate = stats.savingsRate;
         return AiAnswer(
           text:
-              "Your savings rate $when is ${rate.toStringAsFixed(1)}% — you "
+              "Your savings rate $when is ${rate.toStringAsFixed(1)}%, you "
               "kept ${_money(stats.totalSaved)} of ${_money(stats.totalIncome)} earned.",
           widget: AiWidgetSpec.statCard(
             title: 'Savings rate',
@@ -203,10 +203,10 @@ class IntentExecutor {
         }
         return AiAnswer(
           text:
-              "Here's your spending trend$inCategory $when — "
+              "Here's your spending trend$inCategory $when: "
               "${_money(stats.totalSpending)} total.",
           widget: AiWidgetSpec.line(
-            title: 'Spending trend — ${_titleCase(when)}',
+            title: 'Spending trend · ${_titleCase(when)}',
             labels: _trendLabels(intent.period, reference, data.length),
             values: data,
           ),
@@ -274,7 +274,7 @@ class IntentExecutor {
   AiWidgetSpec _categoryPie(StatisticsHelper stats, int topN, String when) {
     final cats = stats.categoryStats.take(topN).toList();
     return AiWidgetSpec.pie(
-      title: 'Spending by category — ${_titleCase(when)}',
+      title: 'Spending by category · ${_titleCase(when)}',
       segments: [
         for (final c in cats)
           AiChartSegment(

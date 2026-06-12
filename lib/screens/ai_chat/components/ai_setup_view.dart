@@ -65,7 +65,7 @@ class _AiSetupViewState extends State<AiSetupView> {
             const SizedBox(height: 12),
             Text(
               "Download a small AI model once and ask anything about your "
-              "spending — even offline.",
+              "spending, even offline.",
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 fontSize: 15,
@@ -76,7 +76,7 @@ class _AiSetupViewState extends State<AiSetupView> {
             const SizedBox(height: 24),
             _bullet(
               Icons.lock_outline_rounded,
-              "Runs 100% on your phone — your financial data never leaves "
+              "Runs 100% on your phone. Your financial data never leaves "
               "your device",
             ),
             _bullet(
@@ -85,7 +85,7 @@ class _AiSetupViewState extends State<AiSetupView> {
             ),
             _bullet(
               Icons.cloud_download_outlined,
-              "One-time ${model.sizeLabel} download — Wi-Fi recommended",
+              "One-time ${model.sizeLabel} download, Wi-Fi recommended",
             ),
             const SizedBox(height: 20),
             if (!isDownloading) ...[
@@ -237,7 +237,7 @@ class _AiSetupViewState extends State<AiSetupView> {
                     Text(
                       fits
                           ? m.subtitle
-                          : "Needs ≥${m.minRamGb} GB RAM — not enough on "
+                          : "Needs ${m.minRamGb} GB+ RAM, not enough on "
                                 "this phone",
                       style: GoogleFonts.outfit(
                         fontSize: 12,

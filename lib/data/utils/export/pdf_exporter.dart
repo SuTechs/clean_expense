@@ -128,7 +128,7 @@ class PdfExporter {
               ),
               pw.SizedBox(height: 4),
               pw.Text(
-                'Expense Report — ${input.periodLabel}',
+                'Expense Report · ${input.periodLabel}',
                 style: const pw.TextStyle(
                   color: PdfColors.white,
                   fontSize: 11,
@@ -276,7 +276,7 @@ class PdfExporter {
             money(entry.value),
             totalSpending > 0
                 ? '${(entry.value / totalSpending * 100).toStringAsFixed(1)}%'
-                : '—',
+                : '-',
           ],
       ],
       headerStyle: pw.TextStyle(

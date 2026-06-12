@@ -36,7 +36,7 @@ class DeviceCapability {
       if (Platform.isAndroid) {
         final info = await plugin.androidInfo;
         if (!info.supportedAbis.contains('arm64-v8a')) {
-          return 'This device has a 32-bit processor — on-device AI needs '
+          return 'This device has a 32-bit processor. On-device AI needs '
               'a 64-bit (arm64) device.';
         }
         if (info.physicalRamSize < _minRamMb) {

@@ -70,7 +70,7 @@ class _NameInputPageState extends State<NameInputPage> {
             ),
             const SizedBox(height: 12),
             const Text(
-              "Totally optional — you can change it anytime.",
+              "Totally optional, you can change it anytime.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,

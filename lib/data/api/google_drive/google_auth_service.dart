@@ -46,10 +46,17 @@ class GoogleAuthService {
     _initialized = true;
   }
 
-  /// Restores the previous session without UI. Null when there is none.
-  Future<GoogleSignInAccount?> signInSilently() async {
+  /// UI-less Drive client for background syncs, built from the persisted
+  /// authorization grant (like Firebase session restore). Crucially this is
+  /// pure AUTHORIZATION — re-AUTHENTICATING (even "lightweight") goes
+  /// through Android's Credential Manager, which flashes its bottom sheet
+  /// on every new process. Null when the grant is gone and the user must
+  /// reconnect interactively. The caller must close the client.
+  Future<http.Client?> silentDriveClient() async {
     await _ensureInitialized();
-    return await GoogleSignIn.instance.attemptLightweightAuthentication();
+    final authorization = await GoogleSignIn.instance.authorizationClient
+        .authorizationForScopes(scopes);
+    return authorization?.authClient(scopes: scopes);
   }
 
   /// Interactive sign-in. Throws [GoogleSignInException] (e.g. canceled).

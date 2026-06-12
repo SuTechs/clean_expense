@@ -86,16 +86,10 @@ class _AppBootstrapper extends StatelessWidget {
     if (showOnboarding) {
       return OnboardingScreen(
         // Connecting runs a merge, which on a fresh install IS the restore.
+        // Returns false on cancel; throws (readable message) on failure so
+        // the onboarding screen can show it.
         onRestoreBackup: SyncCommand().isConfigured
-            ? (context) async {
-                try {
-                  await SyncCommand().connect();
-                  return true;
-                } catch (_) {
-                  // Canceled sign-in or failure: stay in onboarding.
-                  return false;
-                }
-              }
+            ? (context) => SyncCommand().connectInteractive()
             : null,
       );
     }

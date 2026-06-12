@@ -32,21 +32,21 @@ class _AiDemoState extends State<AiDemo> {
   static const _entries = [
     _AiDemoEntry(
       "Where am I spending most? 🤔",
-      "Food is your top category — 42% of this month's spending.",
+      "Food is your top category, 42% of this month's spending.",
       [("food", 1.0), ("travel", 0.55), ("bills", 0.35)],
     ),
     _AiDemoEntry(
       "My biggest expense this month?",
-      "Rent — {c}12,000 on the 1st. That's 28% of the month.",
+      "Rent: {c}12,000 on the 1st. That's 28% of the month.",
     ),
     _AiDemoEntry(
       "How's my savings rate? 💰",
-      "You saved 31% of your income this year — nice!",
+      "You saved 31% of your income this year. Nice!",
       [("income", 1.0), ("spent", 0.69)],
     ),
     _AiDemoEntry(
       "What did I spend this week?",
-      "{c}3,240 this week — 12% less than last week 📉",
+      "{c}3,240 this week, 12% less than last week 📉",
       [("last wk", 1.0), ("this wk", 0.88)],
     ),
   ];

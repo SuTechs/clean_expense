@@ -410,9 +410,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: OutlinedButton(
                     onPressed: _busy
                         ? null
-                        : () => _run(
-                            () => SyncCommand().syncNow(interactive: true),
-                          ),
+                        : () => _run(() => SyncCommand().syncNow()),
                     style: _outlinedStyle(),
                     child: const Text("Backup now"),
                   ),

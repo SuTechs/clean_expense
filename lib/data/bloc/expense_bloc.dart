@@ -10,7 +10,9 @@ class ExpenseBloc extends AbstractBloc {
 
   /// refresh - update expenses
   void refresh(List<ExpenseData> newExpenses) {
-    _expenses = newExpenses;
+    // Own a mutable copy: callers may pass unmodifiable lists (e.g. a
+    // freezed BackupData.expenses during restore), and addExpense mutates.
+    _expenses = List.of(newExpenses);
     _suggestionsCache.clear();
     notifyListeners();
   }

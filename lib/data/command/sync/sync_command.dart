@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart'
+    show GoogleSignInException, GoogleSignInExceptionCode;
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 
@@ -25,7 +27,12 @@ import '../commands.dart';
 class SyncCommand extends BaseAppCommand {
   static Timer? _debounce;
   static const _debounceDelay = Duration(seconds: 30);
-  static const _resumeSyncThrottle = Duration(minutes: 5);
+
+  // How stale the last sync must be before an open/resume pulls from Drive.
+  // Kept long on purpose: every silent sign-in can flash Android's
+  // Credential Manager sheet, so routine opens shouldn't trigger one.
+  // Dirty local changes always sync regardless.
+  static const _resumeSyncThrottle = Duration(hours: 6);
 
   SyncBloc get syncBloc => BaseAppCommand.blocSync;
 
@@ -38,15 +45,53 @@ class SyncCommand extends BaseAppCommand {
     }
   }
 
-  /// Interactive sign-in + first sync. The merge inside [syncNow] doubles as
-  /// the restore for fresh installs. Throws on failure (including cancel).
+  /// Interactive sign-in + first sync, reusing the just-authenticated
+  /// account directly (a second silent sign-in here can re-invoke
+  /// Credential Manager and hang). The merge inside doubles as the restore
+  /// for fresh installs. Throws on any failure, including cancel.
   Future<void> connect() async {
-    final account = await GoogleAuthService().signIn();
-    await hive.setSyncEnabled(true);
-    await hive.setSyncAccountEmail(account.email);
-    syncBloc.setConnected(account.email, hive.getLastBackupAt);
+    syncBloc.setSyncing();
+    http.Client? client;
+    try {
+      final account = await GoogleAuthService().signIn();
+      client = await GoogleAuthService().driveClient(
+        account,
+        interactive: true,
+      );
+      if (client == null) {
+        throw const SyncException('Drive access not granted');
+      }
 
-    await syncNow(interactive: true);
+      await hive.setSyncEnabled(true);
+      await hive.setSyncAccountEmail(account.email);
+      syncBloc.setConnected(account.email, hive.getLastBackupAt);
+
+      await _syncWithClient(client);
+    } catch (e) {
+      debugPrint('SyncCommand.connect: $e');
+      if (hive.getSyncEnabled) {
+        syncBloc.setError('Sync failed, please try again');
+      } else {
+        syncBloc.setDisconnected();
+      }
+      rethrow;
+    } finally {
+      client?.close();
+    }
+  }
+
+  /// [connect] for UI callers: false when the user cancelled sign-in,
+  /// true on success, throws (with a readable message) on real failures.
+  Future<bool> connectInteractive() async {
+    try {
+      await connect();
+      return true;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) return false;
+      throw SyncException('Sign-in failed (${e.code.name})');
+    } on SocketException {
+      throw const SyncException('No internet connection');
+    }
   }
 
   /// Signs out and stops syncing. Local data is kept.
@@ -97,26 +142,19 @@ class SyncCommand extends BaseAppCommand {
     if (hive.getSyncDirty || stale) await syncNow();
   }
 
-  /// Full download → merge → upload round trip.
-  Future<void> syncNow({bool interactive = false}) async {
+  /// Full download → merge → upload round trip. Always UI-less: it runs on
+  /// the persisted authorization grant alone, so it can never pop a sign-in
+  /// sheet — when the grant is gone the user reconnects from the profile.
+  Future<void> syncNow() async {
     if (!hive.getSyncEnabled) return;
     if (syncBloc.status == SyncStatus.syncing) return;
 
     syncBloc.setSyncing();
     http.Client? client;
     try {
-      final account = await GoogleAuthService().signInSilently();
-      if (account == null) {
-        syncBloc.setError('Sign-in expired — reconnect Google Drive');
-        return;
-      }
-
-      client = await GoogleAuthService().driveClient(
-        account,
-        interactive: interactive,
-      );
+      client = await GoogleAuthService().silentDriveClient();
       if (client == null) {
-        syncBloc.setError('Drive access not granted — reconnect');
+        syncBloc.setError('Drive access expired, please reconnect');
         return;
       }
 
@@ -128,7 +166,7 @@ class SyncCommand extends BaseAppCommand {
     } on drive.DetailedApiRequestError catch (e) {
       syncBloc.setError(
         e.status == 401 || e.status == 403
-            ? 'Drive access revoked — reconnect'
+            ? 'Drive access revoked, please reconnect'
             : 'Drive error (${e.status})',
       );
     } catch (e) {
@@ -214,7 +252,7 @@ class SyncCommand extends BaseAppCommand {
   void _guardSchema(BackupData remote) {
     if (remote.schemaVersion > BackupData.currentSchemaVersion) {
       throw const SyncException(
-        'Backup was made by a newer app version — please update the app',
+        'Backup was made by a newer app version, please update the app',
       );
     }
   }

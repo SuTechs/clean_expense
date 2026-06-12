@@ -21,7 +21,7 @@ class AiQueryCommand extends BaseAppCommand {
   AiBloc get aiBloc => BaseAppCommand.blocAi;
 
   static const _helpText =
-      "I can answer questions about your money — try \"What did I spend "
+      "I can answer questions about your money. Try \"What did I spend "
       "this month?\", \"Where am I spending most?\" or \"My biggest "
       "expense on food\".";
 
@@ -72,7 +72,7 @@ class AiQueryCommand extends BaseAppCommand {
       aiBloc.updateMessage(
         replyId,
         (m) => m.copyWith(
-          text: "The AI had a hiccup — please try again.",
+          text: "The AI had a hiccup, please try again.",
           status: AiMessageStatus.error,
         ),
       );

@@ -180,7 +180,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
-              "Waking up your assistant — first time can take a minute…",
+              "Waking up your assistant, first time can take a minute…",
               style: GoogleFonts.outfit(
                 fontSize: 12,
                 color: AppTheme.textSecondary,
@@ -340,7 +340,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 subtitle: Text(
                   m.fitsRam(deviceRamMb)
                       ? m.subtitle
-                      : "Needs ≥${m.minRamGb} GB RAM — not enough on "
+                      : "Needs ${m.minRamGb} GB+ RAM, not enough on "
                             "this phone",
                   style: GoogleFonts.outfit(
                     fontSize: 12,
