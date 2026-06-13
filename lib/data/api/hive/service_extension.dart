@@ -33,6 +33,12 @@ extension AppHiveService on HiveService {
       ? stringBox.delete('ai.installedModelId')
       : stringBox.put('ai.installedModelId', id);
 
+  /// Insights: the "your money" feed, stored as a JSON array string. Local
+  /// only — deliberately NOT part of the Drive backup.
+  String? get getInsightsFeed => stringBox.get('insights.feed');
+  Future<void> setInsightsFeed(String json) =>
+      stringBox.put('insights.feed', json);
+
   /// Settings
   String? get getCurrency => stringBox.get('currency');
   Future<void> setCurrency(String currency) =>

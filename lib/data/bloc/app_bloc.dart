@@ -35,6 +35,11 @@ class AppBloc extends AbstractBloc {
 
   set hasBootstrapped(bool value) => notify(() => _hasBootstrapped = value);
 
+  /// True on RAM-constrained devices (computed once at bootstrap). Drives
+  /// visual fallbacks: blur degrades to a flat translucent fill and the
+  /// aurora background stops animating, keeping budget phones smooth.
+  bool isLowEndDevice = false;
+
   /// Auth
   // Current User
   late UserData _currentUser =

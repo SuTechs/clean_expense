@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../data/bloc/app_bloc.dart';
 import '../../data/bloc/expense_bloc.dart';
 import '../../data/command/expense/expense_command.dart';
+import '../../data/command/insight/insight_command.dart';
 import '../../data/data/expense/expense.dart';
 import 'components/glass_app_bar.dart';
 import 'components/chat_background.dart';
@@ -61,6 +62,15 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final Uuid _uuid = const Uuid();
   final ChatInteractionProvider _interaction = ChatInteractionProvider();
+
+  @override
+  void initState() {
+    super.initState();
+    // Surface today's "your money" insight when the thread opens.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => InsightCommand().maybeGenerate(),
+    );
+  }
 
   @override
   void dispose() {
