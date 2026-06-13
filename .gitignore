@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local build credentials (Google OAuth client IDs)
+env.json
+ios/Flutter/Secrets.xcconfig

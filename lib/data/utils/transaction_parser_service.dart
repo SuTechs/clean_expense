@@ -89,6 +89,33 @@ class TransactionParserService {
     );
   }
 
+  /// Rebuilds the canonical input string for a transaction so it can be
+  /// re-edited in the input field, such that [parse] round-trips it exactly.
+  ///
+  /// The amount goes last so [parse] reads it back as the amount even when
+  /// the note itself contains numbers (e.g. "2 burgers #food 500"). And
+  /// because [parse] takes the FIRST hashtag as the category, the category
+  /// must lead whenever the note itself contains a hashtag — otherwise
+  /// saving an untouched edit of "Lunch #work" (category food) would
+  /// silently flip the category to work.
+  String reconstruct({
+    required String note,
+    required String category,
+    required double amount,
+  }) {
+    final amountText = amount % 1 == 0
+        ? amount.toStringAsFixed(0)
+        : amount.toString();
+    final trimmedNote = note.trim();
+    final noteHasTag = trimmedNote.contains('#');
+
+    final parts = noteHasTag
+        ? ['#$category', trimmedNote, amountText]
+        : [trimmedNote, '#$category', amountText];
+
+    return parts.where((part) => part.isNotEmpty).join(' ');
+  }
+
   /// Cleans up the notes string by removing extra whitespace.
   String? _cleanNotes(String text) {
     // Remove extra whitespace and trim

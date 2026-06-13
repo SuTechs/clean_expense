@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../data/bloc/app_bloc.dart';
 import '../../../data/bloc/expense_bloc.dart';
 import '../../../data/data/expense/expense.dart';
+import '../state/chat_interaction_provider.dart';
 import '../theme/chat_theme.dart';
 import '../theme/chat_theme_provider.dart';
 import 'chat_bubble.dart';
@@ -161,34 +162,61 @@ class _TransactionBubbleState extends State<_TransactionBubble> {
 
   @override
   Widget build(BuildContext context) {
+    final interaction = context.watch<ChatInteractionProvider>();
+    final highlighted = interaction.isHighlighted(widget.expense.id);
+
     return GestureDetector(
       onTapDown: (_) => _onTapDown(),
       onTapUp: (_) => _onTapUp(),
       onTapCancel: _onTapUp,
+      onTap: interaction.hasSelection
+          ? () => interaction.toggle(widget.expense)
+          : null,
       onLongPress: _onLongPress,
-      child: AnimatedScale(
-        scale: _scale,
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOutCubic,
-        child: ChatBubble(
-          note: widget.expense.note,
-          amount: widget.expense.amount,
-          category: widget.expense.category,
-          date: widget.expense.date,
-          type: widget.expense.type,
-          theme: widget.theme,
-          currency: widget.currency,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        color: highlighted
+            ? _accentColor().withValues(alpha: 0.12)
+            : Colors.transparent,
+        child: AnimatedScale(
+          scale: _scale,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+          child: ChatBubble(
+            note: widget.expense.note,
+            amount: widget.expense.amount,
+            category: widget.expense.category,
+            date: widget.expense.date,
+            type: widget.expense.type,
+            theme: widget.theme,
+            currency: widget.currency,
+          ),
         ),
       ),
     );
+  }
+
+  Color _accentColor() {
+    switch (widget.expense.type) {
+      case TransactionType.outgoing:
+        return widget.theme.outgoingAccent;
+      case TransactionType.incoming:
+        return widget.theme.incomingAccent;
+      case TransactionType.invested:
+        return widget.theme.investedAccent;
+    }
   }
 
   void _onTapDown() => setState(() => _scale = 0.98);
   void _onTapUp() => setState(() => _scale = 1.0);
 
   void _onLongPress() {
+    final interaction = context.read<ChatInteractionProvider>();
+    if (interaction.isEditing) return;
+
     HapticFeedback.mediumImpact();
     setState(() => _scale = 1.0);
+    interaction.select(widget.expense);
   }
 }
 

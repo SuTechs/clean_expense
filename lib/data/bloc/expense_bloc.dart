@@ -6,11 +6,13 @@ class ExpenseBloc extends AbstractBloc {
 
   List<ExpenseData> get expenses => _expenses;
 
-  Map<TransactionType, List<String>> _suggestionsCache = {};
+  final Map<TransactionType, List<String>> _suggestionsCache = {};
 
   /// refresh - update expenses
   void refresh(List<ExpenseData> newExpenses) {
-    _expenses = newExpenses;
+    // Own a mutable copy: callers may pass unmodifiable lists (e.g. a
+    // freezed BackupData.expenses during restore), and addExpense mutates.
+    _expenses = List.of(newExpenses);
     _suggestionsCache.clear();
     notifyListeners();
   }
@@ -80,53 +82,55 @@ class ExpenseBloc extends AbstractBloc {
 
   /// ----------------- Category Breakdown ------------------
 
-  /// Default expense categories (single lowercase words)
+  /// Default expense categories (single lowercase words).
+  /// ORDER MATTERS: until the user has their own history, suggestions show
+  /// in this order — most common everyday categories first.
   static const List<String> expenseCategories = [
     'food',
     'groceries',
+    'travel',
     'transport',
-    'fuel',
-    'bills',
-    'utilities',
-    'rent',
     'shopping',
-    'clothing',
-    'electronics',
+    'bills',
+    'rent',
+    'fuel',
+    'coffee',
+    'dining',
+    'snacks',
     'entertainment',
-    'movies',
-    'games',
-    'subscriptions',
     'health',
+    'utilities',
+    'subscriptions',
+    'clothing',
+    'movies',
     'medicine',
+    'phone',
+    'internet',
     'fitness',
     'gym',
     'education',
+    'personal',
+    'beauty',
+    'electronics',
+    'games',
+    'streaming',
+    'gifts',
+    'household',
+    'parking',
+    'laundry',
     'books',
     'courses',
-    'travel',
     'vacation',
     'insurance',
     'repairs',
     'maintenance',
-    'gifts',
     'donations',
-    'personal',
-    'beauty',
     'pets',
     'kids',
     'family',
     'taxes',
     'fees',
-    'dining',
-    'coffee',
-    'snacks',
     'alcohol',
-    'internet',
-    'phone',
-    'streaming',
-    'parking',
-    'laundry',
-    'household',
   ];
 
   /// Default income categories
@@ -206,14 +210,21 @@ class ExpenseBloc extends AbstractBloc {
     final allCategories = <String>{...usageCount.keys, ...defaults};
     final sortedList = allCategories.toList();
 
-    // Sort: used categories first (by frequency desc), then defaults alphabetically
+    // Sort: used categories first (by frequency desc), then unused defaults
+    // in their curated order (most common everyday categories first).
+    final defaultsOrder = {
+      for (var i = 0; i < defaults.length; i++) defaults[i]: i,
+    };
     sortedList.sort((a, b) {
       final aCount = usageCount[a] ?? 0;
       final bCount = usageCount[b] ?? 0;
       if (aCount != bCount) {
         return bCount.compareTo(aCount); // Higher count first
       }
-      return a.compareTo(b); // Alphabetical for same count
+      final aOrder = defaultsOrder[a] ?? defaults.length;
+      final bOrder = defaultsOrder[b] ?? defaults.length;
+      if (aOrder != bOrder) return aOrder.compareTo(bOrder);
+      return a.compareTo(b);
     });
 
     _suggestionsCache[type] = sortedList;
@@ -250,35 +261,9 @@ class ExpenseBloc extends AbstractBloc {
     return map.map((key, value) => MapEntry(key, value.toList()..sort()));
   }
 
-  void renameCategory(String oldName, String newName) {
-    bool changed = false;
-    for (int i = 0; i < _expenses.length; i++) {
-      if (_expenses[i].category == oldName) {
-        _expenses[i] = _expenses[i].copyWith(category: newName);
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      _expenses = copyList(_expenses);
-      notifyListeners();
-    }
-  }
-
-  void deleteCategory(String categoryName, {required bool deleteTransactions}) {
-    if (deleteTransactions) {
-      _expenses.removeWhere((e) => e.category == categoryName);
-    } else {
-      // Mark as deleted (rename to "deleted")
-      for (int i = 0; i < _expenses.length; i++) {
-        if (_expenses[i].category == categoryName) {
-          _expenses[i] = _expenses[i].copyWith(category: "deleted");
-        }
-      }
-    }
-    _expenses = copyList(_expenses);
-    notifyListeners();
-  }
+  // Category rename/delete live in ExpenseCommand: they must persist to
+  // Hive with updatedAt stamps and tombstones, or restarts and Drive sync
+  // silently revert them.
 
   int getCategoryCount(String categoryName) {
     return _expenses.where((e) => e.category == categoryName).length;

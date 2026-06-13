@@ -34,7 +34,7 @@ android {
         applicationId = "com.sutechs.expense"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24 // flutter_gemma (on-device AI) requires 24+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -49,10 +49,36 @@ android {
         }
     }
 
+    // flutter_gemma bundles MediaPipe/LiteRT's full kitchen sink. We run a
+    // TEXT-only model pinned to the CPU backend, so we drop the native libs
+    // for image generation, vision, GPU acceleration, the Qualcomm NPU
+    // backends, and the Qdrant vector store — together ~half the install
+    // size. If the model ever fails to LOAD on device, the first suspect is
+    // libmediapipe_tasks_vision_jni; restore it and rebuild.
+    packaging {
+        jniLibs {
+            excludes += listOf(
+                "**/libqdrant_edge_ffi.so",
+                "**/libmediapipe_tasks_vision_jni.so",
+                "**/libmediapipe_tasks_vision_image_generator_jni.so",
+                "**/libimagegenerator_gpu.so",
+                "**/libLiteRtGpuAccelerator.so",
+                "**/libLiteRtWebGpuAccelerator.so",
+                "**/libLiteRtOpenClAccelerator.so",
+                "**/libQnn*.so",
+            )
+        }
+    }
+
     buildTypes {
 
         release {
             signingConfig = signingConfigs.getByName("release")
+            // MediaPipe/LiteRT need keep rules or R8 fails the build.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
 
         debug {

@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../data/bloc/app_bloc.dart';
 import '../../../data/command/commands.dart';
 import '../../../data/data/expense/expense.dart';
 import '../../../data/utils/transaction_parser_service.dart';
+import '../state/chat_interaction_provider.dart';
 import '../theme/chat_theme.dart';
 import '../theme/chat_theme_provider.dart';
+import 'type_selector_coach_mark.dart';
 
 class SmartInputField extends StatefulWidget {
   final Future<void> Function(
@@ -32,6 +37,19 @@ class _SmartInputFieldState extends State<SmartInputField>
   bool _isTypeSelectorExpanded = false;
   String? _categoryFilter;
 
+  /// Id of the transaction currently mirrored in the input, so the field
+  /// only re-prefills when edit mode starts/changes (not on every rebuild).
+  String? _lastEditingId;
+
+  /// Draft typed before an edit started, restored when the edit ends so
+  /// long-pressing a bubble doesn't destroy a half-typed expense.
+  String? _draftBeforeEdit;
+
+  // First-use hint pointing at the type selector.
+  final LayerLink _typeSelectorLink = LayerLink();
+  OverlayEntry? _coachMarkEntry;
+  Timer? _coachMarkTimer;
+
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
 
@@ -50,15 +68,54 @@ class _SmartInputFieldState extends State<SmartInputField>
       if (status == AnimationStatus.completed) _shakeController.reset();
     });
     _controller.addListener(_onTextChanged);
+    _maybeShowCoachMark();
   }
 
   @override
   void dispose() {
+    _removeCoachMark();
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     _focusNode.dispose();
     _shakeController.dispose();
     super.dispose();
+  }
+
+  /// Shows the one-time type-selector hint after the screen's entrance
+  /// transition has settled. Dismissed by any tap or a timeout.
+  void _maybeShowCoachMark() {
+    if (BaseAppCommand.blocApp.hasSeenTypeSelectorHint) return;
+
+    _coachMarkTimer = Timer(const Duration(milliseconds: 700), () {
+      if (!mounted || _coachMarkEntry != null) return;
+
+      final theme = context.read<ChatThemeProvider>().theme;
+      _coachMarkEntry = OverlayEntry(
+        builder: (_) => TypeSelectorCoachMark(
+          link: _typeSelectorLink,
+          theme: theme,
+          onDismiss: _dismissCoachMark,
+        ),
+      );
+      Overlay.of(context).insert(_coachMarkEntry!);
+      _coachMarkTimer = Timer(const Duration(seconds: 6), _dismissCoachMark);
+    });
+  }
+
+  /// Removes the overlay without marking the hint as seen (e.g. when the
+  /// screen is popped while the hint is still up).
+  void _removeCoachMark() {
+    _coachMarkTimer?.cancel();
+    _coachMarkTimer = null;
+    _coachMarkEntry?.remove();
+    _coachMarkEntry = null;
+  }
+
+  void _dismissCoachMark() {
+    _removeCoachMark();
+    if (!BaseAppCommand.blocApp.hasSeenTypeSelectorHint) {
+      BaseAppCommand.blocApp.hasSeenTypeSelectorHint = true;
+    }
   }
 
   void _onTextChanged() {
@@ -130,6 +187,109 @@ class _SmartInputFieldState extends State<SmartInputField>
     }
   }
 
+  /// Mirrors edit mode into the input: prefills the reconstructed text when
+  /// editing starts and clears it when editing ends (sent or cancelled).
+  void _syncEditingState(ChatInteractionProvider interaction) {
+    final editing = interaction.editing;
+    if (editing?.id == _lastEditingId) return;
+    _lastEditingId = editing?.id;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (editing != null) {
+        _draftBeforeEdit ??= _controller.text;
+        final text = TransactionParserService().reconstruct(
+          note: editing.note,
+          category: editing.category,
+          amount: editing.amount,
+        );
+        _controller.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+        setState(() {
+          _selectedType = editing.type;
+          _isTypeSelectorExpanded = false;
+          _categoryFilter = null;
+        });
+        _focusNode.requestFocus();
+      } else {
+        // Edit ended (sent or cancelled): bring back whatever the user
+        // had typed before the edit hijacked the field.
+        _controller.text = _draftBeforeEdit ?? '';
+        _draftBeforeEdit = null;
+        setState(() => _categoryFilter = null);
+      }
+    });
+  }
+
+  Widget _buildEditingBanner(
+    ChatTheme theme,
+    ChatInteractionProvider interaction,
+  ) {
+    final expense = interaction.editing!;
+    final color = _getTypeColor(theme, expense.type);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: theme.inputFieldBg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Icon(Icons.edit_outlined, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Editing transaction',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  expense.note.isEmpty
+                      ? '#${expense.category}'
+                      : '${expense.note} · #${expense.category}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: theme.secondaryText),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: interaction.cancelEditing,
+            visualDensity: VisualDensity.compact,
+            icon: Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: theme.secondaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _insertTag(String tag) {
     final text = _controller.text;
     final selection = _controller.selection;
@@ -148,6 +308,9 @@ class _SmartInputFieldState extends State<SmartInputField>
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ChatThemeProvider>().theme;
+    final interaction = context.watch<ChatInteractionProvider>();
+    _syncEditingState(interaction);
+
     final suggestions = BaseAppCommand.blocExpense.getSuggestionsForType(
       _selectedType,
     );
@@ -234,6 +397,10 @@ class _SmartInputFieldState extends State<SmartInputField>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Editing indicator (WhatsApp reply-preview style)
+                      if (interaction.isEditing)
+                        _buildEditingBanner(theme, interaction),
+
                       // Expanded type selector
                       if (_isTypeSelectorExpanded)
                         Container(
@@ -272,30 +439,42 @@ class _SmartInputFieldState extends State<SmartInputField>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // Type selector trigger
-                          GestureDetector(
-                            onTap: () => setState(
-                              () => _isTypeSelectorExpanded =
-                                  !_isTypeSelectorExpanded,
-                            ),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: _getTypeColor(
-                                  theme,
-                                  _selectedType,
-                                ).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _isTypeSelectorExpanded
-                                      ? _getTypeColor(theme, _selectedType)
-                                      : Colors.transparent,
+                          CompositedTransformTarget(
+                            link: _typeSelectorLink,
+                            child: PulsingHighlight(
+                              active: !context
+                                  .watch<AppBloc>()
+                                  .hasSeenTypeSelectorHint,
+                              color: _getTypeColor(theme, _selectedType),
+                              child: GestureDetector(
+                                onTap: () {
+                                  _dismissCoachMark();
+                                  setState(
+                                    () => _isTypeSelectorExpanded =
+                                        !_isTypeSelectorExpanded,
+                                  );
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: _getTypeColor(
+                                      theme,
+                                      _selectedType,
+                                    ).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: _isTypeSelectorExpanded
+                                          ? _getTypeColor(theme, _selectedType)
+                                          : Colors.transparent,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    _getTypeIcon(_selectedType),
+                                    color: _getTypeColor(theme, _selectedType),
+                                    size: 22,
+                                  ),
                                 ),
-                              ),
-                              child: Icon(
-                                _getTypeIcon(_selectedType),
-                                color: _getTypeColor(theme, _selectedType),
-                                size: 22,
                               ),
                             ),
                           ),

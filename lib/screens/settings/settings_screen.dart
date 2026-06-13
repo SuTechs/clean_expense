@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/bloc/app_bloc.dart';
 import '../../theme.dart';
+import '../profile/profile_screen.dart';
+import '../stats/export_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -42,23 +44,12 @@ class SettingsScreen extends StatelessWidget {
             _buildSectionHeader("ACCOUNT"),
             _buildSettingItem(
               icon: Icons.person_outline_rounded,
-              title: "Profile & Storage",
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentPurple.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  "Coming Soon",
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.accentPurple,
-                  ),
-                ),
+              title: "Profile & Backup",
+              subtitle: "Name, Google Drive backup & restore",
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
               ),
-              onTap: () {},
             ),
             const SizedBox(height: 24),
             _buildSectionHeader("PREFERENCES"),
@@ -84,6 +75,15 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               onTap: () => _showCurrencyPicker(context, appBloc),
+            ),
+            _buildSettingItem(
+              icon: Icons.download_rounded,
+              title: "Export Data",
+              subtitle: "PDF report or CSV for Excel / Sheets",
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ExportScreen()),
+              ),
             ),
             const SizedBox(height: 24),
             _buildSectionHeader("SUPPORT & SOCIAL"),
@@ -161,38 +161,41 @@ class SettingsScreen extends StatelessWidget {
     Widget? trailing,
     required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+    // Material (not a decorated Container) provides the surface so the
+    // ListTile's tap ripple is visible and clipped to the rounded corners —
+    // an opaque BoxDecoration would paint over the ink and Flutter asserts.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
         color: AppTheme.cardBackground,
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleFunctions.smooth(16),
-        leading: Icon(icon, color: AppTheme.primaryNavy),
-        title: Text(
-          title,
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.w500,
-            color: AppTheme.primaryNavy,
-          ),
-        ),
-        subtitle: subtitle != null
-            ? Text(
-                subtitle,
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                ),
-              )
-            : null,
-        trailing:
-            trailing ??
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppTheme.textSecondary,
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: onTap,
+          leading: Icon(icon, color: AppTheme.primaryNavy),
+          title: Text(
+            title,
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.w500,
+              color: AppTheme.primaryNavy,
             ),
+          ),
+          subtitle: subtitle != null
+              ? Text(
+                  subtitle,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                )
+              : null,
+          trailing:
+              trailing ??
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.textSecondary,
+              ),
+        ),
       ),
     );
   }
@@ -288,7 +291,3 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-class RoundedRectangleFunctions {
-  static ShapeBorder smooth(double radius) =>
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
-}

@@ -16,6 +16,12 @@ abstract class ExpenseData with _$ExpenseData {
     required DateTime date,
     required TransactionType type,
     required String note,
+
+    /// Epoch millis of the last local edit; used for per-record merge during
+    /// Drive sync. Null for records created before sync existed (treated as
+    /// oldest during merge). Nullable keeps the Hive adapter backward
+    /// compatible — do not reorder existing fields.
+    int? updatedAt,
   }) = _ExpenseData;
 
   factory ExpenseData.fromJson(Map<String, dynamic> json) =>

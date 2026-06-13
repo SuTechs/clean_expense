@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../api/hive/service_extension.dart';
 import '../../data/expense/expense.dart';
+import '../../utils/time_utils.dart';
+import '../sync/sync_command.dart';
 import 'expense_dummy_data.dart';
 
 class ExpenseCommand extends BaseAppCommand {
@@ -28,13 +30,16 @@ class ExpenseCommand extends BaseAppCommand {
 
   /// add expense
   Future<void> addExpense(ExpenseData expense) async {
+    // Stamp for per-record merge during Drive sync.
+    expense = expense.copyWith(updatedAt: TimeUtils.nowMillis);
+
     // 1. Optimistic Update
     expenseBloc.addExpense(expense);
 
     try {
       // 2. Persist
       await hive.addExpense(expense);
-      // save to server as well
+      SyncCommand().scheduleBackup();
     } catch (e) {
       // 3. Rollback on failure
       expenseBloc.deleteExpense(expense.id);
@@ -58,7 +63,8 @@ class ExpenseCommand extends BaseAppCommand {
     try {
       // 2. Persist
       await hive.deleteExpense(id);
-      // delete from server as well
+      await SyncCommand().recordTombstone(id);
+      SyncCommand().scheduleBackup();
     } catch (e) {
       // 3. Rollback
       expenseBloc.addExpense(expenseToDelete);
@@ -67,8 +73,70 @@ class ExpenseCommand extends BaseAppCommand {
     }
   }
 
+  /// Renames a category across all transactions, persisting each change
+  /// with a fresh updatedAt stamp. The bloc-only version of this lost the
+  /// rename on restart and the next sync merge reverted it in the UI.
+  Future<void> renameCategory(String oldName, String newName) async {
+    final affected = expenseBloc.expenses
+        .where((e) => e.category == oldName)
+        .toList();
+    if (affected.isEmpty) return;
+
+    final now = TimeUtils.nowMillis;
+    try {
+      for (final e in affected) {
+        final updated = e.copyWith(category: newName, updatedAt: now);
+        expenseBloc.updateExpense(updated);
+        await hive.updateExpense(updated);
+      }
+    } catch (e) {
+      // Mid-loop failure: resync the bloc with what actually persisted
+      // instead of leaving it half-renamed in memory only.
+      expenseBloc.refresh(hive.getAllExpenses());
+      debugPrint("Error renaming category: $e");
+      rethrow;
+    } finally {
+      SyncCommand().scheduleBackup();
+    }
+  }
+
+  /// Deletes a category: permanently removes its transactions (with
+  /// tombstones so other devices don't resurrect them) or, with
+  /// [deleteTransactions] false, relabels them as "deleted".
+  Future<void> deleteCategory(
+    String name, {
+    required bool deleteTransactions,
+  }) async {
+    if (!deleteTransactions) {
+      await renameCategory(name, 'deleted');
+      return;
+    }
+
+    final affected = expenseBloc.expenses
+        .where((e) => e.category == name)
+        .toList();
+    if (affected.isEmpty) return;
+
+    try {
+      for (final e in affected) {
+        expenseBloc.deleteExpense(e.id);
+        await hive.deleteExpense(e.id);
+        await SyncCommand().recordTombstone(e.id);
+      }
+    } catch (e) {
+      expenseBloc.refresh(hive.getAllExpenses());
+      debugPrint("Error deleting category: $e");
+      rethrow;
+    } finally {
+      SyncCommand().scheduleBackup();
+    }
+  }
+
   /// update expense
   Future<void> updateExpense(ExpenseData expense) async {
+    // Stamp for per-record merge during Drive sync.
+    expense = expense.copyWith(updatedAt: TimeUtils.nowMillis);
+
     // Find old to allow rollback
     final oldExpense = expenseBloc.expenses.cast<ExpenseData?>().firstWhere(
       (e) => e?.id == expense.id,
@@ -81,7 +149,7 @@ class ExpenseCommand extends BaseAppCommand {
     try {
       // 2. Persist
       await hive.updateExpense(expense);
-      // update to server as well
+      SyncCommand().scheduleBackup();
     } catch (e) {
       // 3. Rollback
       if (oldExpense != null) {

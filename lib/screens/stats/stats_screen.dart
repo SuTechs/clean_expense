@@ -14,7 +14,7 @@ import 'components/date_navigator.dart';
 import 'components/comparison_chart_section.dart';
 import 'components/highlight_cards_section.dart';
 import 'components/deep_analysis_section.dart';
-import 'export_screen.dart';
+import '../ai_chat/ai_chat_screen.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -55,6 +55,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBackground,
+      // Export moved to Settings; Ask AI took its app-bar slot.
       appBar: AppBar(
         // ... (existing AppBar)
         title: Text(
@@ -69,19 +70,20 @@ class _StatsScreenState extends State<StatsScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.download_rounded),
-            color: AppTheme.primaryNavy,
+            tooltip: "Ask AI",
+            icon: const Icon(Icons.auto_awesome_rounded),
+            color: AppTheme.accentPurple,
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ExportScreen()),
+                MaterialPageRoute(builder: (context) => const AiChatScreen()),
               );
             },
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

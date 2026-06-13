@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/bloc/expense_bloc.dart';
-import '../../data/command/commands.dart';
+import '../../data/command/expense/expense_command.dart';
 import '../../data/data/expense/expense.dart';
 import '../../theme.dart';
 
@@ -217,13 +217,14 @@ class ManageCategoryScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () {
                   final newName = controller.text.trim().toLowerCase();
+                  Navigator.pop(context);
                   if (newName.isNotEmpty && newName != currentName) {
-                    BaseAppCommand.blocExpense.renameCategory(
-                      currentName,
-                      newName,
+                    _runCategoryAction(
+                      context,
+                      () =>
+                          ExpenseCommand().renameCategory(currentName, newName),
                     );
                   }
-                  Navigator.pop(context);
                 },
                 child: const Text("Save Changes"),
               ),
@@ -233,6 +234,27 @@ class ManageCategoryScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Awaits a category command and surfaces failures: these are
+  /// fire-and-forget multi-record writes, so without this a mid-loop Hive
+  /// error would be an invisible unhandled async exception.
+  Future<void> _runCategoryAction(
+    BuildContext context,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Couldn't update the category, please try again."),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _showDeleteBottomSheet(BuildContext context, String categoryName) {
@@ -268,11 +290,14 @@ class ManageCategoryScreen extends StatelessWidget {
               // Keep Data Button
               OutlinedButton(
                 onPressed: () {
-                  BaseAppCommand.blocExpense.deleteCategory(
-                    categoryName,
-                    deleteTransactions: false,
-                  );
                   Navigator.pop(context);
+                  _runCategoryAction(
+                    context,
+                    () => ExpenseCommand().deleteCategory(
+                      categoryName,
+                      deleteTransactions: false,
+                    ),
+                  );
                 },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -290,11 +315,14 @@ class ManageCategoryScreen extends StatelessWidget {
               // Delete All Button
               ElevatedButton(
                 onPressed: () {
-                  BaseAppCommand.blocExpense.deleteCategory(
-                    categoryName,
-                    deleteTransactions: true,
-                  );
                   Navigator.pop(context);
+                  _runCategoryAction(
+                    context,
+                    () => ExpenseCommand().deleteCategory(
+                      categoryName,
+                      deleteTransactions: true,
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.dangerRed,
