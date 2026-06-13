@@ -1,13 +1,14 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../data/data/expense/expense.dart';
+import '../../../data/utils/category_style.dart';
 import '../theme/chat_theme.dart';
+import 'glass.dart';
 
-/// Chat bubble widget with custom shape and glass effect.
-/// Uses ChatTheme colors for consistent theming.
+/// Chat bubble for a transaction. Glass surface (degrades on low-end), a
+/// per-category icon chip, tabular-figure amount, and a thin accent bar on
+/// the tail edge. Noteless transactions render as a compact single row.
 class ChatBubble extends StatelessWidget {
   final String note;
   final double amount;
@@ -30,91 +31,76 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isLeftAligned = type == TransactionType.incoming;
+    final isLeftAligned = type == TransactionType.incoming;
+    final accent = _accentColor();
+    final bg = _bubbleBg();
+    final border = _borderColor();
+    final icon = CategoryStyle.iconFor(category);
+    final compact = note.isEmpty;
 
-    // Get colors based on type from theme
-    Color bubbleBg;
-    Color accentColor;
-    Color borderColor;
-    IconData categoryIcon;
-
-    switch (type) {
-      case TransactionType.incoming:
-        bubbleBg = theme.incomingBg;
-        accentColor = theme.incomingAccent;
-        borderColor = theme.incomingBorder;
-        categoryIcon = Icons.arrow_downward_rounded;
-        break;
-      case TransactionType.outgoing:
-        bubbleBg = theme.outgoingBg;
-        accentColor = theme.outgoingAccent;
-        borderColor = theme.outgoingBorder;
-        categoryIcon = Icons.arrow_upward_rounded;
-        break;
-      case TransactionType.invested:
-        bubbleBg = theme.investedBg;
-        accentColor = theme.investedAccent;
-        borderColor = theme.investedBorder;
-        categoryIcon = Icons.auto_graph_rounded;
-        break;
-    }
+    // Accent bar sits on the tail side: left for incoming, right for the rest.
+    final radius = BorderRadius.only(
+      topLeft: Radius.circular(isLeftAligned ? 5 : 20),
+      topRight: Radius.circular(isLeftAligned ? 20 : 5),
+      bottomLeft: const Radius.circular(20),
+      bottomRight: const Radius.circular(20),
+    );
 
     return Align(
       alignment: isLeftAligned ? Alignment.centerLeft : Alignment.centerRight,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16.0),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: accentColor.withValues(alpha: 0.15),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ClipPath(
-            clipper: _BubbleClipper(isLeftAligned: isLeftAligned),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: CustomPaint(
-                painter: _ModernBubblePainter(
-                  color: bubbleBg,
-                  borderColor: borderColor,
-                  isLeftAligned: isLeftAligned,
-                ),
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.75,
-                    minWidth: 120,
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        child: Glass(
+          color: bg,
+          borderRadius: radius,
+          border: Border.all(color: border, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.76,
+              minWidth: compact ? 0 : 130,
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Tail-side accent bar for left-aligned (incoming) bubbles.
+                  if (isLeftAligned) _AccentBar(color: accent),
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 11),
+                      child: compact
+                          ? _CompactRow(
+                              icon: icon,
+                              amount: amount,
+                              type: type,
+                              accent: accent,
+                              category: category,
+                              currency: currency,
+                              theme: theme,
+                            )
+                          : _FullBody(
+                              icon: icon,
+                              note: note,
+                              amount: amount,
+                              type: type,
+                              accent: accent,
+                              category: category,
+                              date: date,
+                              currency: currency,
+                              theme: theme,
+                            ),
+                    ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (note.isNotEmpty) ...[
-                        _BubbleNote(note: note, theme: theme),
-                        const SizedBox(height: 6),
-                      ],
-                      _BubbleAmount(
-                        amount: amount,
-                        type: type,
-                        color: accentColor,
-                        currency: currency,
-                      ),
-                      const SizedBox(height: 10),
-                      _BubbleFooter(
-                        category: category,
-                        date: date,
-                        accentColor: accentColor,
-                        icon: categoryIcon,
-                        theme: theme,
-                      ),
-                    ],
-                  ),
-                ),
+                  if (!isLeftAligned) _AccentBar(color: accent),
+                ],
               ),
             ),
           ),
@@ -122,197 +108,136 @@ class ChatBubble extends StatelessWidget {
       ),
     );
   }
+
+  Color _accentColor() => switch (type) {
+    TransactionType.incoming => theme.incomingAccent,
+    TransactionType.outgoing => theme.outgoingAccent,
+    TransactionType.invested => theme.investedAccent,
+  };
+
+  Color _bubbleBg() => switch (type) {
+    TransactionType.incoming => theme.incomingBg,
+    TransactionType.outgoing => theme.outgoingBg,
+    TransactionType.invested => theme.investedBg,
+  };
+
+  Color _borderColor() => switch (type) {
+    TransactionType.incoming => theme.incomingBorder,
+    TransactionType.outgoing => theme.outgoingBorder,
+    TransactionType.invested => theme.investedBorder,
+  };
 }
 
-/// Custom clipper for bubble shape with sharp corner
-class _BubbleClipper extends CustomClipper<Path> {
-  final bool isLeftAligned;
-
-  _BubbleClipper({required this.isLeftAligned});
-
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    const double radius = 20.0;
-    const double sharpRadius = 4.0;
-
-    if (isLeftAligned) {
-      // Left aligned: sharp top-left corner
-      path.moveTo(sharpRadius, 0);
-      path.lineTo(size.width - radius, 0);
-      path.quadraticBezierTo(size.width, 0, size.width, radius);
-      path.lineTo(size.width, size.height - radius);
-      path.quadraticBezierTo(
-        size.width,
-        size.height,
-        size.width - radius,
-        size.height,
-      );
-      path.lineTo(radius, size.height);
-      path.quadraticBezierTo(0, size.height, 0, size.height - radius);
-      path.lineTo(0, sharpRadius);
-      path.quadraticBezierTo(0, 0, sharpRadius, 0);
-    } else {
-      // Right aligned: sharp top-right corner
-      path.moveTo(radius, 0);
-      path.lineTo(size.width - sharpRadius, 0);
-      path.quadraticBezierTo(size.width, 0, size.width, sharpRadius);
-      path.lineTo(size.width, size.height - radius);
-      path.quadraticBezierTo(
-        size.width,
-        size.height,
-        size.width - radius,
-        size.height,
-      );
-      path.lineTo(radius, size.height);
-      path.quadraticBezierTo(0, size.height, 0, size.height - radius);
-      path.lineTo(0, radius);
-      path.quadraticBezierTo(0, 0, radius, 0);
-    }
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
-
-/// Custom painter for bubble with border
-class _ModernBubblePainter extends CustomPainter {
+class _AccentBar extends StatelessWidget {
   final Color color;
-  final Color borderColor;
-  final bool isLeftAligned;
+  const _AccentBar({required this.color});
 
-  _ModernBubblePainter({
-    required this.color,
-    required this.borderColor,
-    required this.isLeftAligned,
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 3, color: color.withValues(alpha: 0.9));
+}
+
+/// Square tinted icon chip identifying the category at a glance.
+class _CategoryChip extends StatelessWidget {
+  final IconData icon;
+  final Color accent;
+  final double size;
+  const _CategoryChip({
+    required this.icon,
+    required this.accent,
+    this.size = 30,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    const double radius = 20.0;
-    const double sharpRadius = 4.0;
-
-    if (isLeftAligned) {
-      path.moveTo(sharpRadius, 0);
-      path.lineTo(size.width - radius, 0);
-      path.quadraticBezierTo(size.width, 0, size.width, radius);
-      path.lineTo(size.width, size.height - radius);
-      path.quadraticBezierTo(
-        size.width,
-        size.height,
-        size.width - radius,
-        size.height,
-      );
-      path.lineTo(radius, size.height);
-      path.quadraticBezierTo(0, size.height, 0, size.height - radius);
-      path.lineTo(0, sharpRadius);
-      path.quadraticBezierTo(0, 0, sharpRadius, 0);
-    } else {
-      path.moveTo(radius, 0);
-      path.lineTo(size.width - sharpRadius, 0);
-      path.quadraticBezierTo(size.width, 0, size.width, sharpRadius);
-      path.lineTo(size.width, size.height - radius);
-      path.quadraticBezierTo(
-        size.width,
-        size.height,
-        size.width - radius,
-        size.height,
-      );
-      path.lineTo(radius, size.height);
-      path.quadraticBezierTo(0, size.height, 0, size.height - radius);
-      path.lineTo(0, radius);
-      path.quadraticBezierTo(0, 0, radius, 0);
-    }
-    path.close();
-
-    canvas.drawPath(path, paint);
-
-    // Draw border
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawPath(path, borderPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// --- Sub-Widgets ---
-
-class _BubbleNote extends StatelessWidget {
-  final String note;
-  final ChatTheme theme;
-
-  const _BubbleNote({required this.note, required this.theme});
-
-  @override
   Widget build(BuildContext context) {
-    return Text(
-      note,
-      style: TextStyle(
-        color: theme.primaryText,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        height: 1.3,
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(size * 0.33),
       ),
+      child: Icon(icon, size: size * 0.55, color: accent),
     );
   }
 }
 
-class _BubbleAmount extends StatelessWidget {
+class _AmountText extends StatelessWidget {
   final double amount;
   final TransactionType type;
   final Color color;
   final String currency;
-
-  const _BubbleAmount({
+  final double fontSize;
+  const _AmountText({
     required this.amount,
     required this.type,
     required this.color,
     required this.currency,
+    this.fontSize = 25,
   });
 
   @override
   Widget build(BuildContext context) {
-    final symbol = type == TransactionType.incoming
-        ? '+'
-        : type == TransactionType.outgoing
-        ? '-'
-        : '';
+    final sign = switch (type) {
+      TransactionType.incoming => '+',
+      TransactionType.outgoing => '-',
+      TransactionType.invested => '',
+    };
     return Text(
-      "$symbol$currency${amount.toStringAsFixed(0)}",
+      "$sign$currency${amount.toStringAsFixed(0)}",
       style: TextStyle(
         color: color,
-        fontSize: 26,
+        fontSize: fontSize,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.5,
         height: 1.0,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
   }
 }
 
-class _BubbleFooter extends StatelessWidget {
+class _CategoryPill extends StatelessWidget {
   final String category;
-  final DateTime date;
-  final Color accentColor;
-  final IconData icon;
-  final ChatTheme theme;
+  final Color accent;
+  const _CategoryPill({required this.category, required this.accent});
 
-  const _BubbleFooter({
-    required this.category,
-    required this.date,
-    required this.accentColor,
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        "#${category.toLowerCase()}",
+        style: TextStyle(
+          color: accent,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactRow extends StatelessWidget {
+  final IconData icon;
+  final double amount;
+  final TransactionType type;
+  final Color accent;
+  final String category;
+  final String currency;
+  final ChatTheme theme;
+  const _CompactRow({
     required this.icon,
+    required this.amount,
+    required this.type,
+    required this.accent,
+    required this.category,
+    required this.currency,
     required this.theme,
   });
 
@@ -320,38 +245,95 @@ class _BubbleFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 10, color: accentColor),
-              const SizedBox(width: 4),
-              Text(
-                category.toUpperCase(),
-                style: TextStyle(
-                  color: accentColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
+        _CategoryChip(icon: icon, accent: accent, size: 28),
+        const SizedBox(width: 10),
+        _AmountText(
+          amount: amount,
+          type: type,
+          color: accent,
+          currency: currency,
+          fontSize: 20,
         ),
-        const Spacer(),
-        Text(
-          DateFormat('h:mm a').format(date).toLowerCase(),
-          style: TextStyle(
-            color: theme.secondaryText,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
+        const SizedBox(width: 10),
+        _CategoryPill(category: category, accent: accent),
+      ],
+    );
+  }
+}
+
+class _FullBody extends StatelessWidget {
+  final IconData icon;
+  final String note;
+  final double amount;
+  final TransactionType type;
+  final Color accent;
+  final String category;
+  final DateTime date;
+  final String currency;
+  final ChatTheme theme;
+  const _FullBody({
+    required this.icon,
+    required this.note,
+    required this.amount,
+    required this.type,
+    required this.accent,
+    required this.category,
+    required this.date,
+    required this.currency,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _CategoryChip(icon: icon, accent: accent),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    note,
+                    style: TextStyle(
+                      color: theme.primaryText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  _AmountText(
+                    amount: amount,
+                    type: type,
+                    color: accent,
+                    currency: currency,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _CategoryPill(category: category, accent: accent),
+            const Spacer(),
+            Text(
+              DateFormat('h:mm a').format(date).toLowerCase(),
+              style: TextStyle(
+                color: theme.secondaryText,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ],
     );

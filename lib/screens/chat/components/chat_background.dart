@@ -1,9 +1,14 @@
-import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../data/bloc/app_bloc.dart';
 import '../theme/chat_theme.dart';
 
-/// Animated gradient background for the chat screen.
-/// Uses ChatTheme colors for consistent theming.
+/// Aurora background: soft radial colour blobs drifting slowly over the
+/// theme's gradient. Falls back to a static gradient on low-end devices or
+/// when the OS requests reduced motion, keeping budget phones smooth.
 class ChatBackground extends StatefulWidget {
   final ChatTheme theme;
   final Widget? child;
@@ -16,21 +21,16 @@ class ChatBackground extends StatefulWidget {
 
 class _ChatBackgroundState extends State<ChatBackground>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    // Slow drift — barely perceptible so it never competes with content.
     _controller = AnimationController(
-      duration: const Duration(seconds: 8),
+      duration: const Duration(seconds: 24),
       vsync: this,
-    )..repeat(reverse: true);
-
-    _animation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    );
   }
 
   @override
@@ -41,60 +41,104 @@ class _ChatBackgroundState extends State<ChatBackground>
 
   @override
   Widget build(BuildContext context) {
-    final colors = widget.theme.backgroundGradient;
+    final lowEnd = context.select((AppBloc b) => b.isLowEndDevice);
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final animate = !lowEnd && !reduceMotion;
+
+    if (animate) {
+      if (!_controller.isAnimating) _controller.repeat(reverse: true);
+    } else if (_controller.isAnimating) {
+      _controller.stop();
+    }
+
+    final theme = widget.theme;
+    final base = theme.backgroundGradient;
+    final blobs = [
+      theme.outgoingAccent,
+      theme.investedAccent,
+      theme.incomingAccent,
+    ];
+
+    if (!animate) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: base,
+          ),
+        ),
+        child: CustomPaint(
+          painter: _AuroraPainter(t: 0.4, blobs: blobs, animate: false),
+          child: widget.child,
+        ),
+      );
+    }
 
     return AnimatedBuilder(
-      animation: _animation,
+      animation: _controller,
       builder: (context, child) {
-        return Container(
+        return DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
-              end: Alignment(
-                0.5 + (_animation.value * 0.5),
-                1.0 - (_animation.value * 0.2),
-              ),
-              colors: [
-                Color.lerp(colors[0], colors[1], _animation.value)!,
-                Color.lerp(colors[1], colors[2], _animation.value)!,
-                Color.lerp(colors[2], colors[0], _animation.value)!,
-              ],
+              end: Alignment.bottomRight,
+              colors: base,
             ),
           ),
-          child: child,
+          child: CustomPaint(
+            painter: _AuroraPainter(
+              t: _controller.value,
+              blobs: blobs,
+              animate: true,
+            ),
+            child: child,
+          ),
         );
       },
-      child: CustomPaint(
-        painter: _SubtlePatternPainter(color: widget.theme.patternColor),
-        child: widget.child,
-      ),
+      child: widget.child,
     );
   }
 }
 
-/// Paints a subtle dot pattern for texture
-class _SubtlePatternPainter extends CustomPainter {
-  final Color color;
+/// Paints 3 soft radial blobs whose centres drift on slow sine paths.
+class _AuroraPainter extends CustomPainter {
+  final double t;
+  final List<Color> blobs;
+  final bool animate;
 
-  _SubtlePatternPainter({required this.color});
+  _AuroraPainter({required this.t, required this.blobs, required this.animate});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+    final w = size.width;
+    final h = size.height;
+    // Phase-shifted anchor points so the three blobs never clump.
+    final anchors = [
+      Offset(0.20 * w, 0.18 * h),
+      Offset(0.85 * w, 0.30 * h),
+      Offset(0.65 * w, 0.88 * h),
+    ];
 
-    const spacing = 24.0;
-    const dotRadius = 1.0;
-
-    for (double x = 0; x < size.width; x += spacing) {
-      for (double y = 0; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), dotRadius, paint);
-      }
+    for (var i = 0; i < blobs.length; i++) {
+      final phase = t * 2 * math.pi + i * 2.1;
+      final drift = animate ? 0.06 : 0.0;
+      final c = anchors[i].translate(
+        math.cos(phase) * drift * w,
+        math.sin(phase) * drift * h,
+      );
+      final radius = w * 0.55;
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            blobs[i].withValues(alpha: 0.22),
+            blobs[i].withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromCircle(center: c, radius: radius));
+      canvas.drawCircle(c, radius, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _SubtlePatternPainter oldDelegate) =>
-      color != oldDelegate.color;
+  bool shouldRepaint(_AuroraPainter old) => old.t != t || old.blobs != blobs;
 }

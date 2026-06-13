@@ -41,6 +41,10 @@ class ChatTheme {
   final Color secondaryText;
   final Color dateText;
 
+  // "Your money" insight bubble accent. Defaulted so the 6 existing themes
+  // need no edits; override per-theme to fine-tune.
+  final Color insightAccent;
+
   const ChatTheme({
     required this.id,
     required this.name,
@@ -65,6 +69,7 @@ class ChatTheme {
     required this.primaryText,
     required this.secondaryText,
     required this.dateText,
+    this.insightAccent = const Color(0xFF6C63FF),
   });
 }
 
@@ -210,6 +215,8 @@ class ChatThemes {
     primaryText: Color(0xFF3B0764),
     secondaryText: Color(0xFF8B7798),
     dateText: Color(0x80581C87),
+    // Teal so the insight bubble stands apart from this purple theme.
+    insightAccent: Color(0xFF0D9488),
   );
 
   /// Midnight Theme - Dark mode with vibrant accents
@@ -245,6 +252,8 @@ class ChatThemes {
     primaryText: Color(0xFFF1F5F9),
     secondaryText: Color(0xFF94A3B8),
     dateText: Color(0x80CBD5E1),
+    // Brighter violet reads better on the deep-navy background.
+    insightAccent: Color(0xFFA78BFA),
   );
 
   /// Carbon Theme - Pure dark with warm accents
@@ -280,6 +289,8 @@ class ChatThemes {
     primaryText: Color(0xFFF5F5F5),
     secondaryText: Color(0xFF737373),
     dateText: Color(0x70A3A3A3),
+    // Brighter violet for contrast on true black.
+    insightAccent: Color(0xFFA78BFA),
   );
 
   /// All available themes

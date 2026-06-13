@@ -4,87 +4,119 @@ import 'package:provider/provider.dart';
 
 import '../../../data/bloc/app_bloc.dart';
 import '../../../data/bloc/expense_bloc.dart';
+import '../../../data/bloc/insight_bloc.dart';
 import '../../../data/data/expense/expense.dart';
+import '../../../data/data/insight/insight.dart';
 import '../state/chat_interaction_provider.dart';
 import '../theme/chat_theme.dart';
 import '../theme/chat_theme_provider.dart';
 import 'chat_bubble.dart';
 import 'date_header.dart';
+import 'insight_bubble.dart';
 
-/// A sliver list that displays transactions with staggered animations.
+/// One row in the chat thread: a transaction or an app-authored insight.
+class _ChatItem {
+  final DateTime date;
+  final ExpenseData? expense;
+  final InsightData? insight;
+  _ChatItem.expense(this.expense) : date = expense!.date, insight = null;
+  _ChatItem.insight(this.insight) : date = insight!.date, expense = null;
+  bool get isInsight => insight != null;
+}
+
+/// Per-day rollup shown in the date divider (expenses only).
+class _DaySummary {
+  double net = 0;
+  int count = 0;
+}
+
+/// A sliver list that interleaves transactions and "your money" insights,
+/// grouped by day with summary dividers.
 class TransactionList extends StatelessWidget {
   const TransactionList({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ChatThemeProvider>().theme;
+    final currency = context.watch<AppBloc>().currency;
+    final expenseBloc = context.watch<ExpenseBloc>();
+    final insightBloc = context.watch<InsightBloc>();
 
-    return Consumer<ExpenseBloc>(
-      builder: (context, bloc, child) {
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-        // Filter out future dated expenses and sort by date descending
-        final expenses =
-            bloc.expenses
-                .where((e) => e.date.isBefore(today) || _isSameDay(e.date, now))
-                .toList()
-              ..sort((a, b) => b.date.compareTo(a.date));
+    final expenses = expenseBloc.expenses
+        .where((e) => e.date.isBefore(today) || _isSameDay(e.date, now))
+        .toList();
 
-        if (expenses.isEmpty) {
-          return SliverFillRemaining(
-            hasScrollBody: false,
-            child: _EmptyState(theme: theme),
+    if (expenses.isEmpty && insightBloc.feed.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _EmptyState(theme: theme),
+      );
+    }
+
+    // Per-day rollup from expenses (insights don't count toward spend).
+    final summaries = <String, _DaySummary>{};
+    for (final e in expenses) {
+      final s = summaries.putIfAbsent(_dayKey(e.date), () => _DaySummary());
+      s.net += e.type == TransactionType.incoming ? e.amount : -e.amount;
+      s.count++;
+    }
+
+    final items = <_ChatItem>[
+      ...expenses.map(_ChatItem.expense),
+      ...insightBloc.feed.map(_ChatItem.insight),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+
+    return SliverPadding(
+      padding: const EdgeInsets.only(bottom: 120, top: 8),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final item = items[index];
+          final isLast = index == items.length - 1;
+          // Header sits at a day boundary (next item is older / a new day),
+          // matching the reversed scroll so it caps the day's group.
+          final showHeader =
+              isLast || !_isSameDay(item.date, items[index + 1].date);
+          final summary = summaries[_dayKey(item.date)];
+
+          return _AnimatedTransactionItem(
+            index: index,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showHeader)
+                  DateHeader(
+                    date: item.date,
+                    theme: theme,
+                    net: summary?.net ?? 0,
+                    count: summary?.count ?? 0,
+                    currency: currency,
+                  ),
+                if (item.isInsight)
+                  InsightBubble(insight: item.insight!, theme: theme)
+                else
+                  _TransactionBubble(
+                    expense: item.expense!,
+                    theme: theme,
+                    currency: currency,
+                  ),
+              ],
+            ),
           );
-        }
-
-        return SliverPadding(
-          padding: const EdgeInsets.only(bottom: 120, top: 8),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final expense = expenses[index];
-              final isLastItem = index == expenses.length - 1;
-
-              bool showDateHeader = false;
-              if (isLastItem) {
-                showDateHeader = true;
-              } else {
-                final nextExpense = expenses[index + 1];
-                if (!_isSameDay(expense.date, nextExpense.date)) {
-                  showDateHeader = true;
-                }
-              }
-
-              return _AnimatedTransactionItem(
-                index: index,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (showDateHeader)
-                      DateHeader(date: expense.date, theme: theme),
-                    _TransactionBubble(
-                      expense: expense,
-                      theme: theme,
-                      currency: context.watch<AppBloc>().currency,
-                    ),
-                  ],
-                ),
-              );
-            }, childCount: expenses.length),
-          ),
-        );
-      },
+        }, childCount: items.length),
+      ),
     );
   }
 
-  bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
+  static String _dayKey(DateTime d) => '${d.year}-${d.month}-${d.day}';
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-/// Animated wrapper for transaction items with staggered entrance.
+/// Animated wrapper for thread items with staggered entrance.
 class _AnimatedTransactionItem extends StatefulWidget {
   final int index;
   final Widget child;

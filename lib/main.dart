@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'data/bloc/app_bloc.dart';
 import 'data/command/ai/ai_model_command.dart';
 import 'data/command/commands.dart';
+import 'data/command/insight/insight_command.dart';
 import 'data/command/sync/sync_command.dart';
 import 'screens/main_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -31,6 +32,9 @@ void main() async {
 
         // AI Bloc - on-device assistant state
         ChangeNotifierProvider.value(value: BaseAppCommand.blocAi),
+
+        // Insight Bloc - "your money" thread messages
+        ChangeNotifierProvider.value(value: BaseAppCommand.blocInsight),
       ],
       child: const MyApp(),
     ),
@@ -60,7 +64,10 @@ class _MyAppState extends State<MyApp> {
         SyncCommand().flushPending();
         AiModelCommand().unload();
       },
-      onResume: () => SyncCommand().syncOnResume(),
+      onResume: () {
+        SyncCommand().syncOnResume();
+        InsightCommand().maybeGenerate();
+      },
     );
   }
 
