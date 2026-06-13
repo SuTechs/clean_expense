@@ -15,11 +15,12 @@ backup, and beautiful themes — offline-first and free forever.
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.sutechs.expense">
-    <img alt="Get it on Google Play" height="56"
+    <img alt="Get it on Google Play" height="52" align="middle"
       src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png">
   </a>
+  &nbsp;
   <a href="https://apps.apple.com/us/app/clean-expense-track-monney/id6757723320">
-    <img alt="Download on the App Store" height="40"
+    <img alt="Download on the App Store" height="35" align="middle"
       src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83">
   </a>
 </p>
