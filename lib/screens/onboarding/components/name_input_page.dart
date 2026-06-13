@@ -119,6 +119,7 @@ class _NameInputPageState extends State<NameInputPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
