@@ -49,6 +49,27 @@ android {
         }
     }
 
+    // flutter_gemma bundles MediaPipe/LiteRT's full kitchen sink. We run a
+    // TEXT-only model pinned to the CPU backend, so we drop the native libs
+    // for image generation, vision, GPU acceleration, the Qualcomm NPU
+    // backends, and the Qdrant vector store — together ~half the install
+    // size. If the model ever fails to LOAD on device, the first suspect is
+    // libmediapipe_tasks_vision_jni; restore it and rebuild.
+    packaging {
+        jniLibs {
+            excludes += listOf(
+                "**/libqdrant_edge_ffi.so",
+                "**/libmediapipe_tasks_vision_jni.so",
+                "**/libmediapipe_tasks_vision_image_generator_jni.so",
+                "**/libimagegenerator_gpu.so",
+                "**/libLiteRtGpuAccelerator.so",
+                "**/libLiteRtWebGpuAccelerator.so",
+                "**/libLiteRtOpenClAccelerator.so",
+                "**/libQnn*.so",
+            )
+        }
+    }
+
     buildTypes {
 
         release {
