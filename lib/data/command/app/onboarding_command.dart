@@ -5,9 +5,11 @@ import 'set_current_user_command.dart';
 class OnboardingCommand extends BaseAppCommand {
   /// Completes onboarding (called on both "Get Started" and "Skip").
   ///
-  /// [sawTypeSelectorPage] suppresses the in-chat type-selector coach mark
-  /// for users who already saw the explanation page; skippers still get it.
-  Future<void> complete({String? name, bool sawTypeSelectorPage = false}) async {
+  /// Note: this does NOT mark the type-selector hint as seen. The onboarding
+  /// demo only builds awareness that income/invest exist; the one-time
+  /// in-chat coach mark still teaches *where* the control is, so every new
+  /// user gets it on first opening the chat.
+  Future<void> complete({String? name}) async {
     final trimmed = name?.trim();
     if (trimmed != null && trimmed.isNotEmpty) {
       await SetCurrentUserCommand().run(
@@ -17,8 +19,6 @@ class OnboardingCommand extends BaseAppCommand {
         ),
       );
     }
-
-    if (sawTypeSelectorPage) appBloc.hasSeenTypeSelectorHint = true;
 
     appBloc.completeOnboarding();
   }

@@ -29,14 +29,12 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   static const _pageCount = 7;
-  static const _typeSelectorPageIndex = 2;
   static const _namePageIndex = 4;
 
   final PageController _pageController = PageController();
   final TextEditingController _nameController = TextEditingController();
 
   int _currentPage = 0;
-  int _maxVisitedPage = 0;
   bool _completing = false;
 
   bool _connectingDrive = false;
@@ -52,10 +50,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _onPageChanged(int page) {
-    setState(() {
-      _currentPage = page;
-      if (page > _maxVisitedPage) _maxVisitedPage = page;
-    });
+    setState(() => _currentPage = page);
   }
 
   void _next() {
@@ -76,10 +71,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     try {
       // Flipping the onboarding flag rebuilds _AppBootstrapper into
       // MainScreen.
-      await OnboardingCommand().complete(
-        name: _nameController.text,
-        sawTypeSelectorPage: _maxVisitedPage >= _typeSelectorPageIndex,
-      );
+      await OnboardingCommand().complete(name: _nameController.text);
     } catch (e) {
       // Without the reset, one failed write makes every later Get
       // Started/Skip tap a silent no-op for the rest of the session.
